@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thincalculator Web</title>
+  
+  <style>
+    /* CSS переменные для светлой темы */
+    :root {
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --card-bg: white;
+      --shadow-color: rgba(0,0,0,0.1);
+      --primary-color: #2c3e50;
+      --secondary-color: #82a7b2;
+      --button-bg: #82a7b2;
+      --button-text: white;
+      --input-bg: white;
+      --input-border: #ddd;
+      --table-border: #ddd;
+      --table-header-bg: #f2f2f2;
+      --history-item-bg: #f9f9f9;
+      --delete-btn: #ff5349;
+      --save-btn: #82a7b2;
+      --tab-inactive: #e0e0e0;
+      --tab-active: #82a7b2;
+    }
+
+    /* CSS переменные для темной темы */
+    .dark-mode {
+      --bg-color: #1a1a1a;
+      --text-color: #f0f0f0;
+      --card-bg: #2d2d2d;
+      --shadow-color: rgba(0,0,0,0.3);
+      --primary-color: #4fc3f7;
+      --secondary-color: #82a7b2;
+      --button-bg: #82a7b2;
+      --button-text: white;
+      --input-bg: #3d3d3d;
+      --input-border: #555;
+      --table-border: #444;
+      --table-header-bg: #333;
+      --history-item-bg: #333;
+      --delete-btn: #ff5349;
+      --save-btn: #82a7b2;
+      --tab-inactive: #444;
+      --tab-active: #82a7b2;
+    }
+
+    /* Основные стили приложения */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    /* Контейнер приложения */
+    .app {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px var(--shadow-color);
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    
+    /* Стили для вкладок */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    /* Кнопки вкладок */
+    .tab-button {
+      padding: 10px 15px;
+      background: var(--tab-inactive);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-color);
+      transition: background-color 0.3s;
+    }
+    
+    /* Активная кнопка вкладки */
+    .tab-button.active {
+      background: var(--tab-active);
+      color: white;
+    }
+    
+    /* Стили для калькуляторов */
+    .calculator {
+      margin-top: 20px;
+    }
+    
+    /* Стили для полей ввода */
+    input {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    
+    /* Стили для кнопок */
+    button {
+      padding: 10px 15px;
+      background: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.3s;
+    }
+    
+    /* Стили для таблиц */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    th, td {
+      border: 1px solid var(--table-border);
+      padding: 8px;
+      text-align: left;
+      transition: border-color 0.3s;
+    }
+    
+    th {
+      background-color: var(--table-header-bg);
+      transition: background-color 0.3s;
+    }
+    
+    /* Стили для выпадающего списка акций */
+    ul {
+      list-style: none;
+      padding: 0;
+      border: 1px solid var(--input-border);
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: var(--card-bg);
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    
+    li {
+      padding: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    li:hover {
+      background-color: var(--tab-inactive);
+    }
+
+    /* Стиль для кнопки сохранения */
+    .save-btn {
+      background: var(--save-btn);
+    }
+    
+    /* Стиль для кнопки удаления */
+    .delete-btn {
+      background: var(--delete-btn);
+    }
+    
+    /* Стиль для истории расчетов */
+    .history-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      background-color: var(--history-item-bg);
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    /* Переключатель темы */
+    .theme-switcher {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    /* Стили для донатного угла */
+    .donate-corner {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      opacity: 0.7;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .donate-corner:hover {
+      opacity: 1;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .donate-corner img {
+      width: 48px;
+      height: 48px;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  </style>
+  
+  <!-- Подключение React и Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <!-- Корневой элемент для React приложения -->
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // Данные об акциях (сокращено до 3 примеров)
+    const STOCK_DATA = [
+            {"name": "iАРТГЕН ао", "ticker": "ABIO", "shares_per_lot": 10, "step": 0.02},
+            {"name": "АбрауДюрсо", "ticker": "ABRD", "shares_per_lot": 10, "step": 0.2},
+            {"name": "ЗВЕЗДА ао", "ticker": "ZVEZ", "shares_per_lot": 1000, "step": 0.01}
+    ];
+
+    /**
+     * Компонент переключателя темы
+     */
+    function ThemeSwitcher({ darkMode, setDarkMode }) {
+      return (
+        <div className="theme-switcher">
+          <span>{darkMode ? 'Темная тема' : 'Светлая тема'}</span>
+          <label className="switch">
+            <input 
+              type="checkbox" 
+              checked={darkMode}
+              onChange={() => setDarkMode(!darkMode)}
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
+      );
+    }
+
+    /**
+     * Компонент вкладок
+     * @param {string} activeTab - текущая активная вкладка
+     * @param {function} setActiveTab - функция для изменения активной вкладки
+     */
+    function Tabs({ activeTab, setActiveTab }) {
+      return (
+        <div className="tabs">
+          <button 
+            className={`tab-button ${activeTab === 'sltp' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sltp')}
+          >
+            ATR для FVG
+          </button>
+          
+          <button 
+            className={`tab-button ${activeTab === 'averaging' ? 'active' : ''}`}
+            onClick={() => setActiveTab('averaging')}
+          >
+            Усреднение/Пирамидинг
+          </button>
+          
+          <button 
+            className={`tab-button ${activeTab === 'fibonacci' ? 'active' : ''}`}
+            onClick={() => setActiveTab('fibonacci')}
+          >
+            Фибоначчи
+          </button>
+          
+          <button 
+            className={`tab-button ${activeTab === 'step' ? 'active' : ''}`}
+            onClick={() => setActiveTab('step')}
+          >
+            Шаг цены
+          </button>
+        </div>
+      );
+    }
+
+    /**
+     * Компонент калькулятора SL/TP
+     */
+    function SLTP({ history, setHistory }) {
+      // Состояния для хранения значений полей ввода и результатов
+      const [closePrice, setClosePrice] = React.useState('');
+      const [atrValue, setAtrValue] = React.useState('');
+      const [results, setResults] = React.useState([]);
+
+      // Функция для расчета SL/TP
+      const calculate = () => {
+        const price = parseFloat(closePrice);
+        const atr = parseFloat(atrValue);
+        
+        // Валидация ввода
+        if (isNaN(price)) {
+          alert('Введите корректную цену закрытия!');
+          return;
+        }
+        
+        if (isNaN(atr) || atr <= 0) {
+          alert('Введите корректное значение ATR (должно быть больше 0)!');
+          return;
+        }
+
+        // Множители для расчета
+        const multipliers = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4];
+        
+        // Расчет результатов для каждого множителя
+        const newResults = multipliers.map(multiplier => ({
+          multiplier,
+          value: atr * multiplier,
+          tp: price + (atr * multiplier),
+          sl: price - (atr * multiplier),
+        }));
+
+        setResults(newResults);
+      };
+
+      // Функция для сохранения данных
+      const saveCalculation = () => {
+        if (results.length === 0) {
+          alert('Нет данных для сохранения!');
+          return;
+        }
+
+        // Создаем новую запись в истории
+        const newHistoryItem = {
+          id: Date.now(),
+          type: 'sltp',
+          date: new Date().toLocaleString(),
+          data: {
+            closePrice,
+            atrValue,
+            results
+          }
+        };
+
+        // Обновляем историю
+        setHistory(prev => [...prev, newHistoryItem]);
+        alert('Расчет сохранен в истории!');
+      };
+
+      // Функция для загрузки данных из истории
+      const loadFromHistory = (item) => {
+        setClosePrice(item.data.closePrice);
+        setAtrValue(item.data.atrValue);
+        setResults(item.data.results);
+      };
+
+      return (
+        <div className="calculator">
+          <h2>Калькулятор ATR для FVG</h2>
+          
+          <div>
+            <label>Цена закрытия:</label>
+            <input
+              type="number"
+              step="0.01"
+              value={closePrice}
+              onChange={(e) => setClosePrice(e.target.value)}
+              placeholder="Введите цену закрытия"
+            />
+          </div>
+          
+          <div>
+            <label>ATR:</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={atrValue}
+              onChange={(e) => setAtrValue(e.target.value)}
+              placeholder="Введите значение ATR"
+            />
+          </div>
+          
+          <button onClick={calculate}>Рассчитать</button>
+          <button className="save-btn" onClick={saveCalculation}>Сохранить расчет</button>
+
+          {/* Отображение результатов в таблице */}
+          {results.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Множитель</th>
+                  <th>ATR × Множитель</th>
+                  <th>TP (Цена + ATR)</th>
+                  <th>SL (Цена - ATR)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.multiplier}</td>
+                    <td>{item.value.toFixed(4)}</td>
+                    <td>{item.tp.toFixed(4)}</td>
+                    <td>{item.sl.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* История расчетов для этого калькулятора */}
+          <CalculationHistory 
+            history={history} 
+            type="sltp" 
+            onLoad={loadFromHistory} 
+            onDelete={(id) => setHistory(prev => prev.filter(item => item.id !== id))}
+          />
+        </div>
+      );
+    }
+
+    /**
+     * Компонент калькулятора усреднения
+     */
+    function Averaging({ history, setHistory }) {
+      // Состояния для хранения значений полей и списка сделок
+      const [lots, setLots] = React.useState('');
+      const [unitsPerLot, setUnitsPerLot] = React.useState('');
+      const [price, setPrice] = React.useState('');
+      const [entries, setEntries] = React.useState([]);
+      const [totalUnits, setTotalUnits] = React.useState(0);
+      const [totalCost, setTotalCost] = React.useState(0);
+
+      // Функция добавления новой сделки
+      const addEntry = () => {
+        const lotsValue = parseFloat(lots);
+        const unitsValue = parseFloat(unitsPerLot);
+        const priceValue = parseFloat(price);
+
+        // Валидация ввода
+        if (isNaN(lotsValue) || lotsValue <= 0) {
+          alert('Введите корректное количество лотов!');
+          return;
+        }
+        
+        if (isNaN(unitsValue) || unitsValue <= 0) {
+          alert('Введите корректное количество единиц в лоте!');
+          return;
+        }
+        
+        if (isNaN(priceValue) || priceValue <= 0) {
+          alert('Введите корректную цену!');
+          return;
+        }
+
+        // Расчет количества единиц и стоимости
+        const units = lotsValue * unitsValue;
+        const cost = units * priceValue;
+
+        // Обновление состояния
+        const newEntries = [...entries, { 
+          lots: lotsValue, 
+          unitsPerLot: unitsValue, 
+          price: priceValue, 
+          units, 
+          cost 
+        }];
+        
+        setEntries(newEntries);
+        setTotalUnits(prev => prev + units);
+        setTotalCost(prev => prev + cost);
+        
+        // Очистка полей ввода
+        setLots('');
+        setUnitsPerLot('');
+        setPrice('');
+      };
+
+      // Функция сброса всех данных
+      const reset = () => {
+        setEntries([]);
+        setTotalUnits(0);
+        setTotalCost(0);
+      };
+
+      // Функция сохранения расчета
+      const saveCalculation = () => {
+        if (entries.length === 0) {
+          alert('Нет данных для сохранения!');
+          return;
+        }
+
+        const newHistoryItem = {
+          id: Date.now(),
+          type: 'averaging',
+          date: new Date().toLocaleString(),
+          data: {
+            entries,
+            totalUnits,
+            totalCost,
+            averagePrice: totalCost / totalUnits
+          }
+        };
+
+        setHistory(prev => [...prev, newHistoryItem]);
+        alert('Расчет сохранен в истории!');
+      };
+
+      // Функция загрузки из истории
+      const loadFromHistory = (item) => {
+        setEntries(item.data.entries);
+        setTotalUnits(item.data.totalUnits);
+        setTotalCost(item.data.totalCost);
+      };
+
+      return (
+        <div className="calculator">
+          <h2>Калькулятор средней цены</h2>
+          
+          <div>
+            <label>Количество лотов:</label>
+            <input
+              type="number"
+              min="1"
+              value={lots}
+              onChange={(e) => setLots(e.target.value)}
+              placeholder="Введите количество лотов"
+            />
+          </div>
+          
+          <div>
+            <label>Единиц в лоте:</label>
+            <input
+              type="number"
+              min="1"
+              value={unitsPerLot}
+              onChange={(e) => setUnitsPerLot(e.target.value)}
+              placeholder="Введите единиц в лоте"
+            />
+          </div>
+          
+          <div>
+            <label>Цена покупки:</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Введите цену покупки"
+            />
+          </div>
+          
+          <button onClick={addEntry}>Добавить сделку</button>
+          <button onClick={reset}>Сбросить</button>
+          <button className="save-btn" onClick={saveCalculation}>Сохранить расчет</button>
+
+          {/* Отображение списка сделок и итогов */}
+          {entries.length > 0 && (
+            <div>
+              <h3>Сделки:</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Лоты</th>
+                    <th>Единиц в лоте</th>
+                    <th>Цена</th>
+                    <th>Всего единиц</th>
+                    <th>Стоимость</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr key={index}>
+                      <td>{entry.lots}</td>
+                      <td>{entry.unitsPerLot}</td>
+                      <td>{entry.price.toFixed(4)}</td>
+                      <td>{entry.units}</td>
+                      <td>{entry.cost.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              <p><strong>Общее количество единиц:</strong> {totalUnits}</p>
+              <p><strong>Общая стоимость:</strong> {totalCost.toFixed(4)}</p>
+              <p><strong>Средняя цена:</strong> {(totalCost / totalUnits).toFixed(4)}</p>
+            </div>
+          )}
+
+          {/* История расчетов для этого калькулятора */}
+          <CalculationHistory 
+            history={history} 
+            type="averaging" 
+            onLoad={loadFromHistory} 
+            onDelete={(id) => setHistory(prev => prev.filter(item => item.id !== id))}
+          />
+        </div>
+      );
+    }
+
+    /**
+     * Компонент калькулятора Фибоначчи
+     */
+    function Fibonacci({ history, setHistory }) {
+      // Состояния для точек Фибоначчи и уровней
+      const [start, setStart] = React.useState('');
+      const [end, setEnd] = React.useState('');
+      const [levels, setLevels] = React.useState([]);
+
+      // Функция расчета уровней Фибоначчи
+      const calculate = () => {
+        const startValue = parseFloat(start);
+        const endValue = parseFloat(end);
+
+        // Валидация ввода
+        if (isNaN(startValue)) {
+          alert('Введите корректное значение для точки 0%!');
+          return;
+        }
+        
+        if (isNaN(endValue)) {
+          alert('Введите корректное значение для точки 100%!');
+          return;
+        }
+
+        // Разница между точками
+        const diff = endValue - startValue;
+        
+        // Уровни Фибоначчи
+        const fibLevels = [
+          0.0, 11.4, 23.6, 30.0, 38.2, 50.0, 61.8, 70.0, 78.6, 88.6, 100.0,
+          113.2, 127.2, 130.0, 141.4, 161.8, 170.0, 178.6, 200.0,
+          213.2, 272.2, 230.0, 241.4, 250.0, 261.8, 270.0, 278.6, 300.0,
+          313.2, 372.2, 341.4, 350.0, 361.8, 400.0, 413.2, 423.6, 427.2,
+          441.4, 461.8
+        ];
+
+        // Расчет цен для каждого уровня
+        const calculated = fibLevels.map(level => ({
+          level,
+          value: startValue + (diff * (level / 100))
+        }));
+
+        setLevels(calculated);
+      };
+
+      // Функция сохранения расчета
+      const saveCalculation = () => {
+        if (levels.length === 0) {
+          alert('Нет данных для сохранения!');
+          return;
+        }
+
+        const newHistoryItem = {
+          id: Date.now(),
+          type: 'fibonacci',
+          date: new Date().toLocaleString(),
+          data: {
+            start,
+            end,
+            levels
+          }
+        };
+
+        setHistory(prev => [...prev, newHistoryItem]);
+        alert('Расчет сохранен в истории!');
+      };
+
+      // Функция загрузки из истории
+      const loadFromHistory = (item) => {
+        setStart(item.data.start);
+        setEnd(item.data.end);
+        setLevels(item.data.levels);
+      };
+
+      return (
+        <div className="calculator">
+          <h2>Калькулятор уровней Фибоначчи</h2>
+          
+          <div>
+            <label>Точка 0%:</label>
+            <input
+              type="number"
+              step="0.01"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              placeholder="Введите значение для 0%"
+            />
+          </div>
+          
+          <div>
+            <label>Точка 100%:</label>
+            <input
+              type="number"
+              step="0.01"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              placeholder="Введите значение для 100%"
+            />
+          </div>
+          
+          <button onClick={calculate}>Рассчитать</button>
+          <button className="save-btn" onClick={saveCalculation}>Сохранить расчет</button>
+
+          {/* Отображение уровней Фибоначчи */}
+          {levels.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Уровень (%)</th>
+                  <th>Цена</th>
+                </tr>
+              </thead>
+              <tbody>
+                {levels.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.level.toFixed(1)}</td>
+                    <td>{item.value.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* История расчетов для этого калькулятора */}
+          <CalculationHistory 
+            history={history} 
+            type="fibonacci" 
+            onLoad={loadFromHistory} 
+            onDelete={(id) => setHistory(prev => prev.filter(item => item.id !== id))}
+          />
+        </div>
+      );
+    }
+
+    /**
+     * Компонент калькулятора шага цены
+     */
+    function StepValue({ history, setHistory }) {
+      // Состояния для поиска акций, выбранной акции и результатов
+      const [search, setSearch] = React.useState('');
+      const [selectedStock, setSelectedStock] = React.useState(null);
+      const [lots, setLots] = React.useState('');
+      const [results, setResults] = React.useState([]);
+
+      // Фильтрация акций по поисковому запросу
+      const filteredStocks = STOCK_DATA.filter(stock => 
+        stock.name.toLowerCase().includes(search.toLowerCase()) || 
+        stock.ticker.toLowerCase().includes(search.toLowerCase())
+      );
+
+      // Функция расчета стоимости шага цены
+      const calculate = () => {
+        if (!selectedStock) {
+          alert('Выберите акцию!');
+          return;
+        }
+        
+        const lotsValue = parseFloat(lots);
+        if (isNaN(lotsValue) || lotsValue <= 0) {
+          alert('Введите корректное количество лотов!');
+          return;
+        }
+
+        // Расчет стоимости шага
+        const cost = selectedStock.step * lotsValue * selectedStock.shares_per_lot;
+        
+        // Добавление результата в список
+        setResults([...results, {
+          ticker: selectedStock.ticker,
+          shares: selectedStock.shares_per_lot,
+          step: selectedStock.step,
+          lots: lotsValue,
+          cost: cost.toFixed(2)
+        }]);
+      };
+
+      // Функция сохранения расчета
+      const saveCalculation = () => {
+        if (results.length === 0) {
+          alert('Нет данных для сохранения!');
+          return;
+        }
+
+        const newHistoryItem = {
+          id: Date.now(),
+          type: 'step',
+          date: new Date().toLocaleString(),
+          data: {
+            selectedStock,
+            lots,
+            results
+          }
+        };
+
+        setHistory(prev => [...prev, newHistoryItem]);
+        alert('Расчет сохранен в истории!');
+      };
+
+      // Функция загрузки из истории
+      const loadFromHistory = (item) => {
+        setSelectedStock(item.data.selectedStock);
+        setSearch(`${item.data.selectedStock.name} (${item.data.selectedStock.ticker})`);
+        setResults(item.data.results);
+      };
+
+      return (
+        <div className="calculator">
+          <h2>Калькулятор стоимости шага цены (1 пункта)</h2>
+          
+          <div>
+            <label>Поиск акции:</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Название или тикер"
+            />
+            
+            {/* Выпадающий список с результатами поиска */}
+            {search && (
+              <ul>
+                {filteredStocks.map(stock => (
+                  <li 
+                    key={stock.ticker}
+                    onClick={() => {
+                      setSelectedStock(stock);
+                      setSearch(`${stock.name} (${stock.ticker})`);
+                    }}
+                  >
+                    {stock.name} ({stock.ticker})
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          
+          {/* Поля ввода для выбранной акции */}
+          {selectedStock && (
+            <>
+              <div>
+                <label>Количество лотов:</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={lots}
+                  onChange={(e) => setLots(e.target.value)}
+                  placeholder="Введите количество лотов"
+                />
+              </div>
+              <button onClick={calculate}>Рассчитать</button>
+              <button className="save-btn" onClick={saveCalculation}>Сохранить расчет</button>
+            </>
+          )}
+
+          {/* Отображение результатов расчетов */}
+          {results.length > 0 && (
+            <div>
+              <h3>Результаты:</h3>
+              {results.map((result, index) => (
+                <div key={index}>
+                  <p>---</p>
+                  <p>Тикер: {result.ticker}</p>
+                  <p>Акций в лоте: {result.shares}</p>
+                  <p>Шаг цены: {result.step} коп.</p>
+                  <p>Стоимость шага: {result.cost} коп.</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* История расчетов для этого калькулятора */}
+          <CalculationHistory 
+            history={history} 
+            type="step" 
+            onLoad={loadFromHistory} 
+            onDelete={(id) => setHistory(prev => prev.filter(item => item.id !== id))}
+          />
+        </div>
+      );
+    }
+
+    /**
+     * Компонент для отображения истории расчетов
+     */
+    function CalculationHistory({ history, type, onLoad, onDelete }) {
+      // Фильтрация истории по типу калькулятора
+      const filteredHistory = history.filter(item => item.type === type);
+
+      if (filteredHistory.length === 0) return null;
+
+      return (
+        <div>
+          <h3>История расчетов:</h3>
+          {filteredHistory.map(item => (
+            <div key={item.id} className="history-item">
+              <p><strong>{item.date}</strong></p>
+              <button onClick={() => onLoad(item)}>Загрузить</button>
+              <button className="delete-btn" onClick={() => onDelete(item.id)}>Удалить</button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    /**
+     * Главный компонент приложения
+     */
+    function App() {
+      // Состояние для активной вкладки и истории расчетов
+      const [activeTab, setActiveTab] = React.useState('sltp');
+      const [history, setHistory] = React.useState([]);
+      const [darkMode, setDarkMode] = React.useState(false);
+
+      // Загрузка истории и темы из localStorage при монтировании
+      React.useEffect(() => {
+        const savedHistory = localStorage.getItem('calculatorHistory');
+        if (savedHistory) {
+          setHistory(JSON.parse(savedHistory));
+        }
+        
+        const savedTheme = localStorage.getItem('darkMode');
+        if (savedTheme === 'enabled') {
+          setDarkMode(true);
+          document.body.classList.add('dark-mode');
+        }
+      }, []);
+
+      // Сохранение истории в localStorage при изменении
+      React.useEffect(() => {
+        localStorage.setItem('calculatorHistory', JSON.stringify(history));
+      }, [history]);
+
+      // Обработчик изменения темы
+      React.useEffect(() => {
+        if (darkMode) {
+          document.body.classList.add('dark-mode');
+          localStorage.setItem('darkMode', 'enabled');
+        } else {
+          document.body.classList.remove('dark-mode');
+          localStorage.setItem('darkMode', 'disabled');
+        }
+      }, [darkMode]);
+
+      return (
+        <div className="app">
+          <h1>Thincalculator Web</h1>
+          
+          {/* Компонент переключателя темы */}
+          <ThemeSwitcher darkMode={darkMode} setDarkMode={setDarkMode} />
+          
+          {/* Компонент вкладок */}
+          <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          
+          {/* Отображение активного калькулятора */}
+          {activeTab === 'sltp' && <SLTP history={history} setHistory={setHistory} />}
+          {activeTab === 'averaging' && <Averaging history={history} setHistory={setHistory} />}
+          {activeTab === 'fibonacci' && <Fibonacci history={history} setHistory={setHistory} />}
+          {activeTab === 'step' && <StepValue history={history} setHistory={setHistory} />}
+        </div>
+      );
+    }
+
+    // Создание корневого элемента и рендеринг приложения
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <a href="https://www.donationalerts.com/r/skandalov" target="_blank" class="donate-corner">
+    <img src="https://img.icons8.com/?size=100&id=k7LsOQu8wVE4&format=png&color=000000" alt="Поддержать">
+  </a>
+</body>
+</html>
