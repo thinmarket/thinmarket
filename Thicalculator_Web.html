@@ -238,11 +238,11 @@
       transform: translateX(26px);
     }
     
-    /* Стили для донатного угла */
+    /* Правый угол */
     .donate-corner {
       position: fixed;
       bottom: 40px;
-      right: 40px;
+      right: 330px;
       opacity: 0.7;
       transition: all 0.3s;
       z-index: 1000;
@@ -258,6 +258,46 @@
       height: 200px;
     }
     
+    /* Левый угол */
+    .hello-corner {
+      position: fixed;
+      bottom: 40px;
+      right: 1400px;
+      opacity: 0.7;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .hello-corner:hover {
+      opacity: 1;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .hello-corner img {
+      width: 200px;
+      height: 200px;
+    }
+    
+    /* Левый угол выше*/
+    .telegram-corner {
+      position: fixed;
+      bottom: 300px;
+      right: 1400px;
+      opacity: 0.7;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .telegram-corner:hover {
+      opacity: 1;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .telegram-corner img {
+      width: 200px;
+      height: 200px;
+    }
+
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.1); }
@@ -539,6 +579,7 @@
             {"name": "ЗВЕЗДА ао", "ticker": "ZVEZ", "shares_per_lot": 1000, "step": 0.01}
     ];
 
+    /**
     /**
      * Компонент переключателя темы
      */
@@ -1280,8 +1321,14 @@
     root.render(<App />);
   </script>
 
-<a href="https://www.donationalerts.com/r/skandalov" target="_blank" class="donate-corner">
-  <img src="/icons/thindonate.png" alt="Поддержать">
+<a href="https://t.me/Thinmarket" target="_blank" class="telegram-corner">
+  <img src="/icons/telegram.png" alt="Открыть">
+
+  <a href="https://disk.yandex.com/d/NzD2SZFKa5YX-A" target="_blank" class="hello-corner">
+    <img src="/icons/desktop_versionpng.png" alt="Открыть">
+
+  <a href="https://www.donationalerts.com/r/skandalov" target="_blank" class="donate-corner">
+    <img src="/icons/thindonate.png" alt="Поддержать">
   </a>
 </body>
 </html>
