@@ -257,6 +257,26 @@
       width: 200px;
       height: 200px;
     }
+
+    /* Правый угол выше */
+    .mql5-corner {
+      position: fixed;
+      bottom: 300px;
+      right: 330px;
+      opacity: 0.7;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .mql5-corner:hover {
+      opacity: 1;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .mql5-corner img {
+      width: 200px;
+      height: 200px;
+    }    
     
     /* Левый угол */
     .hello-corner {
@@ -297,6 +317,26 @@
       width: 200px;
       height: 200px;
     }
+
+    /* Левый угол еще выше*/
+    .dzen-corner {
+      position: fixed;
+      bottom: 560px;
+      right: 1400px;
+      opacity: 0.7;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .dzen-corner:hover {
+      opacity: 1;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .dzen-corner img {
+      width: 200px;
+      height: 200px;
+    }    
 
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -579,7 +619,6 @@
             {"name": "ЗВЕЗДА ао", "ticker": "ZVEZ", "shares_per_lot": 1000, "step": 0.01}
     ];
 
-    /**
     /**
      * Компонент переключателя темы
      */
@@ -1321,11 +1360,17 @@
     root.render(<App />);
   </script>
 
+<a href="https://dzen.ru/thinmarket?tab=articles" target="_blank" class="dzen-corner">
+  <img src="/icons/dzen.png" alt="Открыть">
+
 <a href="https://t.me/Thinmarket" target="_blank" class="telegram-corner">
   <img src="/icons/telegram.png" alt="Открыть">
 
   <a href="https://disk.yandex.com/d/NzD2SZFKa5YX-A" target="_blank" class="hello-corner">
     <img src="/icons/desktop_versionpng.png" alt="Открыть">
+
+    <a href="https://www.mql5.com/ru/market/product/135355?source=Site+Profile+Seller" target="_blank" class="mql5-corner">
+      <img src="/icons/mql5.png" alt="Открыть">    
 
   <a href="https://www.donationalerts.com/r/skandalov" target="_blank" class="donate-corner">
     <img src="/icons/thindonate.png" alt="Поддержать">
