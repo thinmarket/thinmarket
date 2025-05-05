@@ -237,388 +237,47 @@
     input:checked + .slider:before {
       transform: translateX(26px);
     }
-    
-    /* Правый угол */
-    .donate-corner {
-      position: fixed;
-      bottom: 40px;
-      right: 330px;
-      opacity: 0.7;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    
-    .donate-corner:hover {
-      opacity: 1;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .donate-corner img {
-      width: 200px;
-      height: 200px;
-    }
-
-    /* Правый угол выше */
-    .mql5-corner {
-      position: fixed;
-      bottom: 300px;
-      right: 330px;
-      opacity: 0.7;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    
-    .mql5-corner:hover {
-      opacity: 1;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .mql5-corner img {
-      width: 200px;
-      height: 200px;
-    }    
-    
-    /* Левый угол */
-    .hello-corner {
-      position: fixed;
-      bottom: 40px;
-      right: 1400px;
-      opacity: 0.7;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    
-    .hello-corner:hover {
-      opacity: 1;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .hello-corner img {
-      width: 200px;
-      height: 200px;
-    }
-    
-    /* Левый угол выше*/
-    .telegram-corner {
-      position: fixed;
-      bottom: 300px;
-      right: 1400px;
-      opacity: 0.7;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    
-    .telegram-corner:hover {
-      opacity: 1;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .telegram-corner img {
-      width: 200px;
-      height: 200px;
-    }
-
-    /* Левый угол еще выше*/
-    .dzen-corner {
-      position: fixed;
-      bottom: 560px;
-      right: 1400px;
-      opacity: 0.7;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-    
-    .dzen-corner:hover {
-      opacity: 1;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .dzen-corner img {
-      width: 200px;
-      height: 200px;
-    }    
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
-    }
   </style>
   
   <!-- Подключение React и Babel -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Подключаем MOEX API -->
+  <script src="moex-api.js"></script>
 </head>
 <body>
   <!-- Корневой элемент для React приложения -->
   <div id="root"></div>
 
   <script type="text/babel">
-    // Данные об акциях (сокращено до 3 примеров)
-    const STOCK_DATA = [
-            {"name": "iАРТГЕН ао", "ticker": "ABIO", "shares_per_lot": 10, "step": 0.02},
-            {"name": "АбрауДюрсо", "ticker": "ABRD", "shares_per_lot": 10, "step": 0.2},
-            {"name": "АСКО ао", "ticker": "ACKO", "shares_per_lot": 100, "step": 0.02},
-            {"name": "Система ао", "ticker": "AFKS", "shares_per_lot": 100, "step": 0.001},
-            {"name": "Аэрофлот", "ticker": "AFLT", "shares_per_lot": 10, "step": 0.01},
-            {"name": "AGRO-гдр", "ticker": "AGRO", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Акрон", "ticker": "AKRN", "shares_per_lot": 1, "step": 2},
-            {"name": "АЛРОСА ао", "ticker": "ALRS", "shares_per_lot": 10, "step": 0.01},
-            {"name": "АшинскийМЗ", "ticker": "AMEZ", "shares_per_lot": 100, "step": 0.05},
-            {"name": "АПРИ", "ticker": "APRI", "shares_per_lot": 10, "step": 0.002},
-            {"name": "Аптеки36и6", "ticker": "APTK", "shares_per_lot": 10, "step": 0.002},
-            {"name": "ИНАРКТИКА", "ticker": "AQUA", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Арсагера", "ticker": "ARSA", "shares_per_lot": 100, "step": 0.01},
-            {"name": "АстрЭнСб", "ticker": "ASSB", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "Астра ао", "ticker": "ASTR", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Авангрд-ао", "ticker": "AVAN", "shares_per_lot": 1, "step": 1},
-            {"name": "Башнефт ао", "ticker": "BANE", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Башнефт ап", "ticker": "BANEP", "shares_per_lot": 1, "step": 0.5},
-            {"name": "НоваБев ао", "ticker": "BELU", "shares_per_lot": 1, "step": 0.5},
-            {"name": "БашИнСв ап", "ticker": "BISVP", "shares_per_lot": 100, "step": 0.01},
-            {"name": "Белон ао", "ticker": "BLNG", "shares_per_lot": 100, "step": 0.01},
-            {"name": "БурЗолото", "ticker": "BRZL", "shares_per_lot": 1, "step": 1},
-            {"name": "БСП ао", "ticker": "BSPB", "shares_per_lot": 10, "step": 0.01},
-            {"name": "БСП ап", "ticker": "BSPBP", "shares_per_lot": 100, "step": 0.05},
-            {"name": "СТГ", "ticker": "CARM", "shares_per_lot": 100, "step": 0.0005},
-            {"name": "МКБ ао", "ticker": "CBOM", "shares_per_lot": 100, "step": 0.001},
-            {"name": "РН-ЗапСиб", "ticker": "CHGZ", "shares_per_lot": 10, "step": 0.2},
-            {"name": "ЧКПЗ ао", "ticker": "CHKZ", "shares_per_lot": 1, "step": 50},
-            {"name": "СевСт-ао", "ticker": "CHMF", "shares_per_lot": 1, "step": 0.2},
-            {"name": "ЧМК ао", "ticker": "CHMK", "shares_per_lot": 1, "step": 5},
-            {"name": "CIAN-адр", "ticker": "CIAN", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Телеграф", "ticker": "CNTL", "shares_per_lot": 100, "step": 0.02},
-            {"name": "Телеграф-п", "ticker": "CNTLP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "iАренадата", "ticker": "DATA", "shares_per_lot": 1, "step": 0.02},
-            {"name": "iКаршеринг", "ticker": "DELI", "shares_per_lot": 1, "step": 0.05},
-            {"name": "iДиасофт", "ticker": "DIAS", "shares_per_lot": 1, "step": 0.5},
-            {"name": "ЗаводДИОД", "ticker": "DIOD", "shares_per_lot": 100, "step": 0.01},
-            {"name": "ДетскийМир", "ticker": "DSKY", "shares_per_lot": 10, "step": 0.02},
-            {"name": "ДЭК ао", "ticker": "DVEC", "shares_per_lot": 1000, "step": 0.001},
-            {"name": "ДонскЗР", "ticker": "DZRD", "shares_per_lot": 1, "step": 5},
-            {"name": "ДонскЗР п", "ticker": "DZRDP", "shares_per_lot": 1, "step": 10},
-            {"name": "ЕвроЭлтех", "ticker": "EELT", "shares_per_lot": 10, "step": 0.02},
-            {"name": "ЭЛ5Энер ао", "ticker": "ELFV", "shares_per_lot": 1000, "step": 0.0002},
-            {"name": "Элемент", "ticker": "ELMT", "shares_per_lot": 1000, "step": 0.00005},
-            {"name": "ЭН+ГРУП ао", "ticker": "ENPG", "shares_per_lot": 1, "step": 0.05},
-            {"name": "ETLN-гдр", "ticker": "ETLN", "shares_per_lot": 1, "step": 0.02},
-            {"name": "ЕвроТранс", "ticker": "EUTR", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Россети", "ticker": "FEES", "shares_per_lot": 10000, "step": 0.00002},
-            {"name": "ДВМП ао", "ticker": "FESH", "shares_per_lot": 10, "step": 0.01},
-            {"name": "FIXP-гдр", "ticker": "FIXP", "shares_per_lot": 1, "step": 0.1},
-            {"name": "Совкомфлот", "ticker": "FLOT", "shares_per_lot": 10, "step": 0.01},
-            {"name": "ГАЗ ао", "ticker": "GAZA", "shares_per_lot": 10, "step": 1},
-            {"name": "ГАЗ ап", "ticker": "GAZAP", "shares_per_lot": 10, "step": 0.5},
-            {"name": "ГАЗКОН-ао", "ticker": "GAZC", "shares_per_lot": 10, "step": 1},
-            {"name": "ГАЗПРОМ ао", "ticker": "GAZP", "shares_per_lot": 10, "step": 0.01},
-            {"name": "ГАЗ-сервис", "ticker": "GAZS", "shares_per_lot": 10, "step": 1},
-            {"name": "ГАЗ-Тек ао", "ticker": "GAZT", "shares_per_lot": 10, "step": 0.5},
-            {"name": "ЧеркизГ-ао", "ticker": "GCHE", "shares_per_lot": 1, "step": 1},
-            {"name": "iГЕНЕТИКО", "ticker": "GECO", "shares_per_lot": 10, "step": 0.01},
-            {"name": "iММЦБ ао", "ticker": "GEMA", "shares_per_lot": 10, "step": 0.1},
-            {"name": "МКПАО ЮМГ", "ticker": "GEMC", "shares_per_lot": 1, "step": 0.1},
-            {"name": "ГМКНорНик", "ticker": "GMKN", "shares_per_lot": 10, "step": 0.02},
-            {"name": "ГТМ ао", "ticker": "GTRK", "shares_per_lot": 10, "step": 0.1},
-            {"name": "Хэдхантер", "ticker": "HEAD", "shares_per_lot": 1, "step": 1},
-            {"name": "Химпром ап", "ticker": "HIMCP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "ХЭНДЕРСОН", "ticker": "HNFG", "shares_per_lot": 1, "step": 0.1},
-            {"name": "РусГидро", "ticker": "HYDR", "shares_per_lot": 1000, "step": 0.0001},
-            {"name": "Ижсталь2ао", "ticker": "IGST", "shares_per_lot": 1, "step": 20},
-            {"name": "Ижсталь ап", "ticker": "IGSTP", "shares_per_lot": 1, "step": 10},
-            {"name": "ИНГРАД ао", "ticker": "INGR", "shares_per_lot": 1, "step": 2},
-            {"name": "ИнтерРАОао", "ticker": "IRAO", "shares_per_lot": 100, "step": 0.0005},
-            {"name": "Яковлев-3", "ticker": "IRKT", "shares_per_lot": 100, "step": 0.02},
-            {"name": "iИВА", "ticker": "IVAT", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Славн-ЯНОС", "ticker": "JNOS", "shares_per_lot": 100, "step": 0.05},
-            {"name": "Слав-ЯНОСп", "ticker": "JNOSP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "Куйбазот", "ticker": "KAZT", "shares_per_lot": 10, "step": 0.2},
-            {"name": "Куйбазот-п", "ticker": "KAZTP", "shares_per_lot": 10, "step": 0.5},
-            {"name": "ТНСэКубань", "ticker": "KBSB", "shares_per_lot": 10, "step": 0.5},
-            {"name": "КамчатЭ ао", "ticker": "KCHE", "shares_per_lot": 10000, "step": 0.001},
-            {"name": "КамчатЭ ап", "ticker": "KCHEP", "shares_per_lot": 10000, "step": 0.005},
-            {"name": "КурганГКао", "ticker": "KGKC", "shares_per_lot": 10, "step": 0.2},
-            {"name": "КурганГКап", "ticker": "KGKCP", "shares_per_lot": 10, "step": 0.2},
-            {"name": "КалужскСК", "ticker": "KLSB", "shares_per_lot": 100, "step": 0.01},
-            {"name": "Кристалл", "ticker": "KLVZ", "shares_per_lot": 100, "step": 0.002},
-            {"name": "КАМАЗ", "ticker": "KMAZ", "shares_per_lot": 10, "step": 0.1},
-            {"name": "КМЗ", "ticker": "KMEZ", "shares_per_lot": 1, "step": 2},
-            {"name": "КоршГОК ао", "ticker": "KOGK", "shares_per_lot": 1, "step": 200},
-            {"name": "СаратНПЗ", "ticker": "KRKN", "shares_per_lot": 1, "step": 50},
-            {"name": "СаратНПЗ-п", "ticker": "KRKNP", "shares_per_lot": 1, "step": 20},
-            {"name": "ТКЗКК ап", "ticker": "KRKOP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "КрасОкт-ао", "ticker": "KROT", "shares_per_lot": 10, "step": 1},
-            {"name": "КрасОкт-1п", "ticker": "KROTP", "shares_per_lot": 10, "step": 1},
-            {"name": "Красэсб ао", "ticker": "KRSB", "shares_per_lot": 100, "step": 0.02},
-            {"name": "Красэсб ап", "ticker": "KRSBP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "КузнецкийБ", "ticker": "KUZB", "shares_per_lot": 10000, "step": 0.00005},
-            {"name": "ОргСинт ао", "ticker": "KZOS", "shares_per_lot": 10, "step": 0.1},
-            {"name": "ОргСинт ап", "ticker": "KZOSP", "shares_per_lot": 10, "step": 0.01},
-            {"name": "Европлан", "ticker": "LEAS", "shares_per_lot": 1, "step": 0.1},
-            {"name": "Лента ао", "ticker": "LENT", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Фармсинтез", "ticker": "LIFE", "shares_per_lot": 100, "step": 0.005},
-            {"name": "ЛУКОЙЛ", "ticker": "LKOH", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Ламбумиз", "ticker": "LMBZ", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Лензолото", "ticker": "LNZL", "shares_per_lot": 1, "step": 10},
-            {"name": "Лензол. ап", "ticker": "LNZLP", "shares_per_lot": 1, "step": 5},
-            {"name": "ЛЭСК ао", "ticker": "LPSB", "shares_per_lot": 100, "step": 0.05},
-            {"name": "РСетиЛЭ", "ticker": "LSNG", "shares_per_lot": 100, "step": 0.01},
-            {"name": "РСетиЛЭ-п", "ticker": "LSNGP", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ЛСР ао", "ticker": "LSRG", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Левенгук", "ticker": "LVHK", "shares_per_lot": 100, "step": 0.05},
-            {"name": "МагадЭн ао", "ticker": "MAGE", "shares_per_lot": 100, "step": 0.01},
-            {"name": "МагадЭн ап", "ticker": "MAGEP", "shares_per_lot": 100, "step": 0.01},
-            {"name": "ММК", "ticker": "MAGN", "shares_per_lot": 10, "step": 0.005},
-            {"name": "МТС Банк", "ticker": "MBNK", "shares_per_lot": 1, "step": 0.5},
-            {"name": "MDMG-ао", "ticker": "MDMG", "shares_per_lot": 1, "step": 0.1},
-            {"name": "Мегион-ао", "ticker": "MFGS", "shares_per_lot": 10, "step": 1},
-            {"name": "Мегион-ап", "ticker": "MFGSP", "shares_per_lot": 10, "step": 0.5},
-            {"name": "МГКЛ", "ticker": "MGKL", "shares_per_lot": 100, "step": 0.0005},
-            {"name": "Магнит ао", "ticker": "MGNT", "shares_per_lot": 1, "step": 0.5},
-            {"name": "СМЗ-ао", "ticker": "MGNZ", "shares_per_lot": 1, "step": 10},
-            {"name": "МГТС-5ао", "ticker": "MGTS", "shares_per_lot": 1, "step": 5},
-            {"name": "МГТС-4ап", "ticker": "MGTSP", "shares_per_lot": 1, "step": 2},
-            {"name": "ТНСэнМарЭл", "ticker": "MISB", "shares_per_lot": 100, "step": 0.1},
-            {"name": "ТНСэМаЭл-п", "ticker": "MISBP", "shares_per_lot": 100, "step": 0.1},
-            {"name": "МосБиржа", "ticker": "MOEX", "shares_per_lot": 10, "step": 0.01},
-            {"name": "РоссЦентр", "ticker": "MRKC", "shares_per_lot": 1000, "step": 0.0002},
-            {"name": "Россети СК", "ticker": "MRKK", "shares_per_lot": 10, "step": 0.02},
-            {"name": "РСетиЦП ао", "ticker": "MRKP", "shares_per_lot": 10000, "step": 0.0001},
-            {"name": "РсетСиб ао", "ticker": "MRKS", "shares_per_lot": 1000, "step": 0.0005},
-            {"name": "Россети Ур", "ticker": "MRKU", "shares_per_lot": 10000, "step": 0.0002},
-            {"name": "РсетВол ао", "ticker": "MRKV", "shares_per_lot": 10000, "step": 0.00005},
-            {"name": "РоссЮг ао", "ticker": "MRKY", "shares_per_lot": 10000, "step": 0.00005},
-            {"name": "РСетиСЗ ао", "ticker": "MRKZ", "shares_per_lot": 10000, "step": 0.00005},
-            {"name": "МордЭнСб", "ticker": "MRSB", "shares_per_lot": 10000, "step": 0.002},
-            {"name": "+МосЭнерго", "ticker": "MSNG", "shares_per_lot": 1000, "step": 0.0005},
-            {"name": "РСетиМР ао", "ticker": "MSRS", "shares_per_lot": 1000, "step": 0.0005},
-            {"name": "Мостотрест", "ticker": "MSTT", "shares_per_lot": 10, "step": 0.05},
-            {"name": "Мечел ао", "ticker": "MTLR", "shares_per_lot": 1, "step": 0.01},
-            {"name": "Мечел ап", "ticker": "MTLRP", "shares_per_lot": 10, "step": 0.05},
-            {"name": "МТС-ао", "ticker": "MTSS", "shares_per_lot": 10, "step": 0.05},
-            {"name": "М.видео", "ticker": "MVID", "shares_per_lot": 1, "step": 0.05},
-            {"name": "iНПОНаука", "ticker": "NAUK", "shares_per_lot": 10, "step": 0.5},
-            {"name": "НЕФАЗ", "ticker": "NFAZ", "shares_per_lot": 10, "step": 0.5},
-            {"name": "НКХП ао", "ticker": "NKHP", "shares_per_lot": 10, "step": 0.5},
-            {"name": "НКНХ ао", "ticker": "NKNC", "shares_per_lot": 10, "step": 0.05},
-            {"name": "НКНХ ап", "ticker": "NKNCP", "shares_per_lot": 10, "step": 0.02},
-            {"name": "Нижкамшина", "ticker": "NKSH", "shares_per_lot": 100, "step": 0.05},
-            {"name": "НЛМК ао", "ticker": "NLMK", "shares_per_lot": 10, "step": 0.02},
-            {"name": "НМТП ао", "ticker": "NMTP", "shares_per_lot": 100, "step": 0.005},
-            {"name": "ТНСэнНН ао", "ticker": "NNSB", "shares_per_lot": 1, "step": 10},
-            {"name": "ТНСэнНН ап", "ticker": "NNSBP", "shares_per_lot": 1, "step": 2},
-            {"name": "iНаукаСвяз", "ticker": "NSVZ", "shares_per_lot": 10, "step": 0.5},
-            {"name": "Новатэк ао", "ticker": "NVTK", "shares_per_lot": 1, "step": 0.2},
-            {"name": "ОГК-2 ао", "ticker": "OGKB", "shares_per_lot": 1000, "step": 0.0001},
-            {"name": "OKEY-гдр", "ticker": "OKEY", "shares_per_lot": 10, "step": 0.01},
-            {"name": "ОМЗ-ап", "ticker": "OMZZP", "shares_per_lot": 1, "step": 20},
-            {"name": "OZON-адр", "ticker": "OZON", "shares_per_lot": 1, "step": 0.5},
-            {"name": "iОзонФарм", "ticker": "OZPH", "shares_per_lot": 10, "step": 0.01},
-            {"name": "ПавлАвт ао", "ticker": "PAZA", "shares_per_lot": 1, "step": 20},
-            {"name": "ФосАгро ао", "ticker": "PHOR", "shares_per_lot": 1, "step": 1},
-            {"name": "ПИК ао", "ticker": "PIKK", "shares_per_lot": 1, "step": 0.1},
-            {"name": "Полюс", "ticker": "PLZL", "shares_per_lot": 1, "step": 0.2},
-            {"name": "ПермьЭнСб", "ticker": "PMSB", "shares_per_lot": 10, "step": 0.1},
-            {"name": "ПермьЭнС-п", "ticker": "PMSBP", "shares_per_lot": 10, "step": 0.2},
-            {"name": "iПозитив", "ticker": "POSI", "shares_per_lot": 1, "step": 0.2},
-            {"name": "ЧЗПСН ао", "ticker": "PRFN", "shares_per_lot": 100, "step": 0.002},
-            {"name": "Приморье", "ticker": "PRMB", "shares_per_lot": 1, "step": 200},
-            {"name": "ПРОМОМЕД", "ticker": "PRMD", "shares_per_lot": 1, "step": 0.05},
-            {"name": "iNanduQPLC", "ticker": "QIWI", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Русагро", "ticker": "RAGR", "shares_per_lot": 1, "step": 0.02},
-            {"name": "Распадская", "ticker": "RASP", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ГК РБК ао", "ticker": "RBCM", "shares_per_lot": 100, "step": 0.005},
-            {"name": "РДБанк ао", "ticker": "RDRB", "shares_per_lot": 10, "step": 0.5},
-            {"name": "Ренессанс", "ticker": "RENI", "shares_per_lot": 10, "step": 0.02},
-            {"name": "РГС СК ао", "ticker": "RGSS", "shares_per_lot": 1000, "step": 0.0002},
-            {"name": "ЭнергияРКК", "ticker": "RKKE", "shares_per_lot": 1, "step": 10},
-            {"name": "РуссНфт ао", "ticker": "RNFT", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Русолово", "ticker": "ROLO", "shares_per_lot": 1000, "step": 0.0002},
-            {"name": "Роснефть", "ticker": "ROSN", "shares_per_lot": 1, "step": 0.05},
-            {"name": "РОСИНТЕРао", "ticker": "ROST", "shares_per_lot": 10, "step": 0.2},
-            {"name": "ГР Ростов", "ticker": "RTGZ", "shares_per_lot": 1, "step": 200},
-            {"name": "Ростел -ао", "ticker": "RTKM", "shares_per_lot": 10, "step": 0.01},
-            {"name": "Ростел -ап", "ticker": "RTKMP", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ТНСэнРст", "ticker": "RTSB", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "ТНСэнРст-п", "ticker": "RTSBP", "shares_per_lot": 1000, "step": 0.002},
-            {"name": "РУСАЛ ао", "ticker": "RUAL", "shares_per_lot": 10, "step": 0.005},
-            {"name": "ИКРУСС-ИНВ", "ticker": "RUSI", "shares_per_lot": 10, "step": 0.1},
-            {"name": "РязЭнСб", "ticker": "RZSB", "shares_per_lot": 100, "step": 0.02},
-            {"name": "СамарЭн-ао", "ticker": "SAGO", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "СамарЭн-ап", "ticker": "SAGOP", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "СаратЭн-ао", "ticker": "SARE", "shares_per_lot": 10000, "step": 0.001},
-            {"name": "СаратЭн-ап", "ticker": "SAREP", "shares_per_lot": 10000, "step": 0.0005},
-            {"name": "Сбербанк", "ticker": "SBER", "shares_per_lot": 10, "step": 0.01},
-            {"name": "Сбербанк-п", "ticker": "SBERP", "shares_per_lot": 10, "step": 0.01},
-            {"name": "Селигдар", "ticker": "SELG", "shares_per_lot": 10, "step": 0.01},
-            {"name": "ЭсЭфАй ао", "ticker": "SFIN", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Сегежа", "ticker": "SGZH", "shares_per_lot": 100, "step": 0.001},
-            {"name": "Газпрнефть", "ticker": "SIBN", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Сахэнер ао", "ticker": "SLEN", "shares_per_lot": 100, "step": 0.005},
-            {"name": "Самолет ао", "ticker": "SMLT", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Сургутнфгз", "ticker": "SNGS", "shares_per_lot": 100, "step": 0.005},
-            {"name": "Сургутнфгз-п", "ticker": "SNGSP", "shares_per_lot": 10, "step": 0.005},
-            {"name": "iСофтлайн", "ticker": "SOFL", "shares_per_lot": 10, "step": 0.02},
-            {"name": "СПБ Биржа", "ticker": "SPBE", "shares_per_lot": 1, "step": 0.1},
-            {"name": "СтаврЭнСб", "ticker": "STSB", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "СтаврЭнСбп", "ticker": "STSBP", "shares_per_lot": 1000, "step": 0.005},
-            {"name": "СОЛЛЕРС", "ticker": "SVAV", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Совкомбанк", "ticker": "SVCB", "shares_per_lot": 100, "step": 0.005},
-            {"name": "Светофор", "ticker": "SVET", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Светофор п", "ticker": "SVETP", "shares_per_lot": 1, "step": 0.05},
-            {"name": "Т-Техно ао", "ticker": "T", "shares_per_lot": 1, "step": 0.2},
-            {"name": "ТамбЭнСб", "ticker": "TASB", "shares_per_lot": 1000, "step": 0.002},
-            {"name": "ТамбЭнСб-п", "ticker": "TASBP", "shares_per_lot": 10000, "step": 0.002},
-            {"name": "Татнфт 3ао", "ticker": "TATN", "shares_per_lot": 1, "step": 0.1},
-            {"name": "Татнфт 3ап", "ticker": "TATNP", "shares_per_lot": 1, "step": 0.1},
-            {"name": "ТГК-1", "ticker": "TGKA", "shares_per_lot": 100000, "step": 0.000002},
-            {"name": "ТГК-2", "ticker": "TGKB", "shares_per_lot": 1000000, "step": 0.000005},
-            {"name": "ТГК-2 ап", "ticker": "TGKBP", "shares_per_lot": 100000, "step": 0.00001},
-            {"name": "ТГК-14", "ticker": "TGKN", "shares_per_lot": 100000, "step": 0.00001},
-            {"name": "ТНСэнрг ао", "ticker": "TNSE", "shares_per_lot": 1, "step": 5},
-            {"name": "РСТомск ао", "ticker": "TORS", "shares_per_lot": 10000, "step": 0.002},
-            {"name": "РСТомск ап", "ticker": "TORSP", "shares_per_lot": 10000, "step": 0.001},
-            {"name": "ТМК ао", "ticker": "TRMK", "shares_per_lot": 10, "step": 0.02},
-            {"name": "Транснф ап", "ticker": "TRNFP", "shares_per_lot": 1, "step": 0.2},
-            {"name": "Таттел. ао", "ticker": "TTLK", "shares_per_lot": 1000, "step": 0.0005},
-            {"name": "ТЗА ао", "ticker": "TUZA", "shares_per_lot": 10, "step": 0.5},
-            {"name": "ЮГК", "ticker": "UGLD", "shares_per_lot": 1000, "step": 0.0001},
-            {"name": "ЮжКузб. ао", "ticker": "UKUZ", "shares_per_lot": 1, "step": 2},
-            {"name": "iАвиастКао", "ticker": "UNAC", "shares_per_lot": 1000, "step": 0.0005},
-            {"name": "ЮУНК ао", "ticker": "UNKL", "shares_per_lot": 1, "step": 10},
-            {"name": "Юнипро ао", "ticker": "UPRO", "shares_per_lot": 1000, "step": 0.001},
-            {"name": "УрКузница", "ticker": "URKZ", "shares_per_lot": 1, "step": 100},
-            {"name": "УралСиб ао", "ticker": "USBN", "shares_per_lot": 10000, "step": 0.0001},
-            {"name": "ЮТэйр ао", "ticker": "UTAR", "shares_per_lot": 100, "step": 0.01},
-            {"name": "ОВК ао", "ticker": "UWGN", "shares_per_lot": 1, "step": 0.02},
-            {"name": "VEON", "ticker": "VEON-RX", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ВолгЭнСб", "ticker": "VGSB", "shares_per_lot": 1000, "step": 0.05},
-            {"name": "ВолгЭнСб-п", "ticker": "VGSBP", "shares_per_lot": 1000, "step": 0.02},
-            {"name": "Варьеган", "ticker": "VJGZ", "shares_per_lot": 1, "step": 5},
-            {"name": "Варьеган-п", "ticker": "VJGZP", "shares_per_lot": 1, "step": 5},
-            {"name": "МКПАО 'ВК'", "ticker": "VKCO", "shares_per_lot": 1, "step": 0.1},
-            {"name": "ВХЗ-ао", "ticker": "VLHZ", "shares_per_lot": 10, "step": 0.2},
-            {"name": "ТНСэнВорон", "ticker": "VRSB", "shares_per_lot": 10, "step": 0.5},
-            {"name": "ТНСэнВор-п", "ticker": "VRSBP", "shares_per_lot": 10, "step": 0.2},
-            {"name": "ВИ.ру", "ticker": "VSEH", "shares_per_lot": 1, "step": 0.05},
-            {"name": "ВСМПО-АВСМ", "ticker": "VSMO", "shares_per_lot": 1, "step": 20},
-            {"name": "ВыбСудЗ ао", "ticker": "VSYD", "shares_per_lot": 1, "step": 50},
-            {"name": "ВыбСудЗ ап", "ticker": "VSYDP", "shares_per_lot": 1, "step": 50},
-            {"name": "ВТБ ао", "ticker": "VTBR", "shares_per_lot": 1, "step": 0.01},
-            {"name": "ЦМТ ао", "ticker": "WTCM", "shares_per_lot": 100, "step": 0.02},
-            {"name": "ЦМТ ап", "ticker": "WTCMP", "shares_per_lot": 100, "step": 0.02},
-            {"name": "iВУШХолднг", "ticker": "WUSH", "shares_per_lot": 1, "step": 0.01},
-            {"name": "КЦ ИКС 5", "ticker": "X5", "shares_per_lot": 1, "step": 0.5},
-            {"name": "ЯТЭК ао", "ticker": "YAKG", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ЯНДЕКС", "ticker": "YDEX", "shares_per_lot": 1, "step": 0.5},
-            {"name": "Якутскэнрг", "ticker": "YKEN", "shares_per_lot": 10000, "step": 0.001},
-            {"name": "Якутскэн-п", "ticker": "YKENP", "shares_per_lot": 10000, "step": 0.001},
-            {"name": "ТНСэнЯр", "ticker": "YRSB", "shares_per_lot": 10, "step": 2},
-            {"name": "ТНСэнЯр-п", "ticker": "YRSBP", "shares_per_lot": 10, "step": 0.5},
-            {"name": "Займер ао", "ticker": "ZAYM", "shares_per_lot": 10, "step": 0.05},
-            {"name": "ЗИЛ ао", "ticker": "ZILL", "shares_per_lot": 1, "step": 5},
-            {"name": "ЗВЕЗДА ао", "ticker": "ZVEZ", "shares_per_lot": 1000, "step": 0.01}
-    ];
+    // Состояние для данных об акциях
+    let STOCK_DATA = [];
+    
+    // Функция загрузки данных с MOEX
+    async function loadStockData() {
+      try {
+        await MOEX_API.loadStockData();
+        const moexData = MOEX_API.getStockData();
+        
+        // Преобразуем данные в нужный формат
+        STOCK_DATA = moexData.map(item => ({
+          name: item.name,
+          ticker: item.ticker,
+          shares_per_lot: item.shares_per_lot,
+          step: item.step,
+          type: item.type
+        }));
+        
+        console.log('Данные с MOEX загружены:', STOCK_DATA.length, 'инструментов');
+      } catch (error) {
+        console.error('Ошибка загрузки данных с MOEX:', error);
+      }
+    }
+    
+    // Загружаем данные при старте
+    loadStockData();
 
     /**
      * Компонент переключателя темы
@@ -1137,12 +796,27 @@
       const [selectedStock, setSelectedStock] = React.useState(null);
       const [lots, setLots] = React.useState('');
       const [results, setResults] = React.useState([]);
+      const [isLoading, setIsLoading] = React.useState(false);
 
       // Фильтрация акций по поисковому запросу
       const filteredStocks = STOCK_DATA.filter(stock => 
-        stock.name.toLowerCase().includes(search.toLowerCase()) || 
-        stock.ticker.toLowerCase().includes(search.toLowerCase())
+       (stock.name.toLowerCase().includes(search.toLowerCase()) || 
+        stock.ticker.toLowerCase().includes(search.toLowerCase())) &&
+        stock.type === "акция"
       );
+
+      // Функция обновления данных
+      const refreshData = async () => {
+        setIsLoading(true);
+        try {
+          await loadStockData();
+          alert('Данные успешно обновлены!');
+        } catch (error) {
+          alert('Ошибка при обновлении данных');
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
       // Функция расчета стоимости шага цены
       const calculate = () => {
@@ -1204,7 +878,7 @@
           <h2>Калькулятор стоимости шага цены (1 пункта)</h2>
           
           <div>
-            <label>Поиск акции:</label>
+            <label>Поиск инструмента:</label>
             <input
               type="text"
               value={search}
@@ -1223,12 +897,17 @@
                       setSearch(`${stock.name} (${stock.ticker})`);
                     }}
                   >
-                    {stock.name} ({stock.ticker})
+                    {stock.name} ({stock.ticker}) - {stock.type}
                   </li>
                 ))}
               </ul>
             )}
           </div>
+          
+          {/* Кнопка обновления данных */}
+          <button onClick={refreshData} disabled={isLoading}>
+            {isLoading ? 'Загрузка...' : 'Обновить данные'}
+          </button>
           
           {/* Поля ввода для выбранной акции */}
           {selectedStock && (
@@ -1253,12 +932,14 @@
             <div>
               <h3>Результаты:</h3>
               {results.map((result, index) => (
-                <div key={index}>
+                <div key={index} className="result-item">
                   <p>---</p>
                   <p>Тикер: {result.ticker}</p>
+                  <p>Тип: {selectedStock?.type || 'неизвестно'}</p>
                   <p>Акций в лоте: {result.shares}</p>
-                  <p>Шаг цены: {result.step} коп.</p>
-                  <p>Стоимость шага: {result.cost} коп.</p>
+                  <p>Шаг цены: {result.step.toFixed(2)} {result.step >= 1 ? 'руб.' : 'коп.'}</p>
+                  <p>Количество лотов: {result.lots}</p>
+                  <p><strong>Стоимость шага: {result.cost} {result.cost >= 1 ? 'руб.' : 'коп.'}</strong></p>
                 </div>
               ))}
             </div>
@@ -1360,21 +1041,5 @@
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
-
-<a href="https://dzen.ru/thinmarket?tab=articles" target="_blank" class="dzen-corner">
-  <img src="/icons/dzen.png" alt="Открыть">
-
-<a href="https://t.me/Thinmarket" target="_blank" class="telegram-corner">
-  <img src="/icons/telegram.png" alt="Открыть">
-
-  <a href="https://disk.yandex.com/d/NzD2SZFKa5YX-A" target="_blank" class="hello-corner">
-    <img src="/icons/desktop_versionpng.png" alt="Открыть">
-
-    <a href="https://www.mql5.com/ru/market/product/135355?source=Site+Profile+Seller" target="_blank" class="mql5-corner">
-      <img src="/icons/mql5.png" alt="Открыть">    
-
-  <a href="https://www.donationalerts.com/r/skandalov" target="_blank" class="donate-corner">
-    <img src="/icons/thindonate.png" alt="Поддержать">
-  </a>
 </body>
 </html>
