@@ -233,6 +233,47 @@
             white-space: nowrap;
         }
 
+        /* Стили для конвертера валют */
+        .converter-input {
+            width: 100%;
+            padding: 6px;
+            margin: 5px 0;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+        .converter-select {
+            width: 100%;
+            padding: 6px;
+            margin: 5px 0;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+        .converter-button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .converter-button:hover {
+            background-color: #45a049;
+        }
+        .converter-result {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #333;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             .content-wrapper {
                 flex-direction: column;
@@ -313,6 +354,37 @@
         
         <!-- Боковая панель с финансовой информацией -->
         <div class="sidebar">
+            <!-- Блок с конвертером валют -->
+            <div class="panel-block" id="currency-converter-block">
+                <div class="panel-block-header">
+                    <span class="panel-block-title">Конвертер валют</span>
+                    <button class="panel-block-toggle" onclick="togglePanel('currency-converter-block')">
+                        <i>▼</i>
+                    </button>
+                </div>
+                <div class="panel-block-content">
+                    <input type="number" id="converter-amount" class="converter-input" placeholder="Сумма" value="1000">
+                    
+                    <select id="converter-from" class="converter-select">
+                        <option value="RUB">Рубли (RUB)</option>
+                        <option value="USD">Доллары (USD)</option>
+                        <option value="EUR">Евро (EUR)</option>
+                        <option value="CNY">Юань (CNY)</option>
+                    </select>
+                    
+                    <select id="converter-to" class="converter-select">
+                        <option value="USD">Доллары (USD)</option>
+                        <option value="RUB">Рубли (RUB)</option>
+                        <option value="EUR">Евро (EUR)</option>
+                        <option value="CNY">Юань (CNY)</option>
+                    </select>
+                    
+                    <button class="converter-button" onclick="convertCurrency()">Конвертировать</button>
+                    
+                    <div id="converter-result" class="converter-result">Результат появится здесь</div>
+                </div>
+            </div>
+            
             <!-- Блок с топ-акциями -->
             <div class="panel-block" id="top-stocks-block">
                 <div class="panel-block-header">
@@ -405,6 +477,13 @@
             board: 'TQBR',
             animationDuration: 300,
             topStocksCount: 5
+        };
+
+        // Текущие курсы валют
+        let currentRates = {
+            USD: 0,
+            EUR: 0,
+            CNY: 0
         };
 
         // Основные функции для котировок
@@ -507,6 +586,11 @@
                 const eur = data.Valute.EUR;
                 const cny = data.Valute.CNY;
                 
+                // Сохраняем текущие курсы для конвертера
+                currentRates.USD = usd.Value;
+                currentRates.EUR = eur.Value;
+                currentRates.CNY = cny.Value;
+                
                 // Рассчитываем изменение по сравнению с предыдущим значением
                 const calculateChange = (current, previous) => {
                     return ((current - previous) / previous * 100).toFixed(2);
@@ -557,6 +641,77 @@
             }
         }
 
+        function convertCurrency() {
+        const amount = parseFloat(document.getElementById('converter-amount').value);
+        if (isNaN(amount)) {
+            document.getElementById('converter-result').textContent = 'Введите корректную сумму';
+            return;
+        }
+        
+        const fromCurrency = document.getElementById('converter-from').value;
+        const toCurrency = document.getElementById('converter-to').value;
+        
+        if (fromCurrency === toCurrency) {
+            document.getElementById('converter-result').textContent = 'Выберите разные валюты';
+            return;
+        }
+        
+        let result = 0;
+        let resultText = '';
+        
+        // Конвертация из рублей в другую валюту
+        if (fromCurrency === 'RUB') {
+            if (toCurrency === 'USD') {
+                result = amount / currentRates.USD;
+                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} USD`;
+            } else if (toCurrency === 'EUR') {
+                result = amount / currentRates.EUR;
+                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} EUR`;
+            } else if (toCurrency === 'CNY') {
+                result = amount / currentRates.CNY;
+                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} CNY`;
+            }
+        }
+        // Конвертация из другой валюты в рубли
+        else if (toCurrency === 'RUB') {
+            if (fromCurrency === 'USD') {
+                result = amount * currentRates.USD;
+                resultText = `${amount.toFixed(2)} USD = ${result.toFixed(2)} RUB`;
+            } else if (fromCurrency === 'EUR') {
+                result = amount * currentRates.EUR;
+                resultText = `${amount.toFixed(2)} EUR = ${result.toFixed(2)} RUB`;
+            } else if (fromCurrency === 'CNY') {
+                result = amount * currentRates.CNY;
+                resultText = `${amount.toFixed(2)} CNY = ${result.toFixed(2)} RUB`;
+            }
+        }
+        // Конвертация между двумя валютами (не рублями)
+        else {
+            // Сначала конвертируем в рубли, затем в целевую валюту
+            let rubAmount = 0;
+            if (fromCurrency === 'USD') {
+                rubAmount = amount * currentRates.USD;
+            } else if (fromCurrency === 'EUR') {
+                rubAmount = amount * currentRates.EUR;
+            } else if (fromCurrency === 'CNY') {
+                rubAmount = amount * currentRates.CNY;
+            }
+            
+            if (toCurrency === 'USD') {
+                result = rubAmount / currentRates.USD;
+                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} USD`;
+            } else if (toCurrency === 'EUR') {
+                result = rubAmount / currentRates.EUR;
+                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} EUR`;
+            } else if (toCurrency === 'CNY') {
+                result = rubAmount / currentRates.CNY;
+                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
+            }
+        }
+        
+        document.getElementById('converter-result').textContent = resultText;
+    }
+
         // Обновление списка топ-акций
         function updateTopStocks(elementId, stocks) {
             const container = document.getElementById(elementId);
@@ -601,7 +756,7 @@
 
         // Инициализация - восстанавливаем состояние из localStorage
         function initPanels() {
-            const panels = ['top-stocks-block', 'currency-rates-block'];
+            const panels = ['currency-converter-block', 'top-stocks-block', 'currency-rates-block'];
             
             panels.forEach(panelId => {
                 const isCollapsed = localStorage.getItem(`${panelId}-collapsed`) === 'true';
@@ -633,6 +788,11 @@
         loadCurrencyRates();
         // Обновляем курсы валют каждые 4 часа (так как ЦБ обновляет их раз в день)
         setInterval(loadCurrencyRates, 4 * 60 * 60 * 1000);
+
+        // Автоматическая конвертация при изменении значений
+        document.getElementById('converter-amount').addEventListener('input', convertCurrency);
+        document.getElementById('converter-from').addEventListener('change', convertCurrency);
+        document.getElementById('converter-to').addEventListener('change', convertCurrency);
 
         window.addEventListener('load', initPanels);
     </script>
