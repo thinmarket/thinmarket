@@ -370,6 +370,11 @@
                         <option value="USD">Доллары (USD)</option>
                         <option value="EUR">Евро (EUR)</option>
                         <option value="CNY">Юань (CNY)</option>
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="ETH">Ethereum (ETH)</option>
+                        <option value="BNB">Binance Coin (BNB)</option>
+                        <option value="SOL">Solana (SOL)</option>
+                        <option value="XRP">Ripple (XRP)</option>
                     </select>
                     
                     <select id="converter-to" class="converter-select">
@@ -377,11 +382,30 @@
                         <option value="RUB">Рубли (RUB)</option>
                         <option value="EUR">Евро (EUR)</option>
                         <option value="CNY">Юань (CNY)</option>
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="ETH">Ethereum (ETH)</option>
+                        <option value="BNB">Binance Coin (BNB)</option>
+                        <option value="SOL">Solana (SOL)</option>
+                        <option value="XRP">Ripple (XRP)</option>
                     </select>
                     
                     <button class="converter-button" onclick="convertCurrency()">Конвертировать</button>
                     
                     <div id="converter-result" class="converter-result">Результат появится здесь</div>
+                </div>
+            </div>
+            
+            <!-- Блок с криптовалютами -->
+            <div class="panel-block" id="crypto-block">
+                <div class="panel-block-header">
+                    <span class="panel-block-title">Криптовалюты</span>
+                    <button class="panel-block-toggle" onclick="togglePanel('crypto-block')" title="Обновляется каждые 5 минут">
+                        <i>▼</i>
+                    </button>
+                </div>
+                <div class="panel-block-content">
+                    <div id="crypto-rates"></div>
+                    <div class="update-time">Обновление каждые 5 мин</div>
                 </div>
             </div>
             
@@ -486,6 +510,15 @@
             CNY: 0
         };
 
+        // Текущие курсы криптовалют (в USD)
+        let currentCryptoRates = {
+            BTC: { price: 0, change: 0 },
+            ETH: { price: 0, change: 0 },
+            BNB: { price: 0, change: 0 },
+            SOL: { price: 0, change: 0 },
+            XRP: { price: 0, change: 0 }
+        };
+
         // Основные функции для котировок
         async function loadData() {
             try {
@@ -557,9 +590,6 @@
         // Функция для загрузки курсов валют с ЦБ РФ
         async function loadCurrencyRates() {
             try {
-                // Получаем текущую дату в формате для API ЦБ
-                const today = new Date();
-                
                 // URL для получения курсов валют (доллар, евро, юань)
                 const url = `https://www.cbr-xml-daily.ru/daily_json.js`;
                 
@@ -641,76 +671,180 @@
             }
         }
 
+        // Функция для загрузки курсов криптовалют
+        async function loadCryptoRates() {
+            try {
+                // Используем CoinGecko API без ключа (бесплатный лимит: 10-30 запросов в минуту)
+                const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,ripple&price_change_percentage=24h';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Обновляем данные
+                data.forEach(crypto => {
+                    const symbol = crypto.symbol.toUpperCase();
+                    if (currentCryptoRates[symbol]) {
+                        currentCryptoRates[symbol].price = crypto.current_price;
+                        currentCryptoRates[symbol].change = crypto.price_change_percentage_24h;
+                    }
+                });
+                
+                // Обновляем отображение
+                updateCryptoDisplay();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки криптовалют:', error);
+                document.getElementById('crypto-rates').innerHTML = '<div class="list-item">Ошибка загрузки</div>';
+            }
+        }
+
+        // Функция для обновления отображения криптовалют
+        function updateCryptoDisplay() {
+            const container = document.getElementById('crypto-rates');
+            container.innerHTML = '';
+            
+            // Добавляем основные криптовалюты
+            Object.entries(currentCryptoRates).forEach(([symbol, data]) => {
+                const changeClass = data.change > 0 ? 'up' : (data.change < 0 ? 'down' : '');
+                const changeSign = data.change > 0 ? '+' : '';
+                
+                const cryptoElement = document.createElement('div');
+                cryptoElement.className = 'list-item';
+                cryptoElement.innerHTML = `
+                    <span class="list-name" title="${getCryptoName(symbol)}">${symbol}</span>
+                    <span class="list-value">${data.price.toFixed(2)} $</span>
+                    <span class="list-change ${changeClass}">${changeSign}${data.change.toFixed(2)}%</span>
+                `;
+                
+                container.appendChild(cryptoElement);
+            });
+        }
+
+        // Вспомогательная функция для получения полного названия криптовалюты
+        function getCryptoName(symbol) {
+            const names = {
+                'BTC': 'Bitcoin',
+                'ETH': 'Ethereum',
+                'BNB': 'Binance Coin',
+                'SOL': 'Solana',
+                'XRP': 'Ripple'
+            };
+            return names[symbol] || symbol;
+        }
+
         function convertCurrency() {
-        const amount = parseFloat(document.getElementById('converter-amount').value);
-        if (isNaN(amount)) {
-            document.getElementById('converter-result').textContent = 'Введите корректную сумму';
-            return;
-        }
-        
-        const fromCurrency = document.getElementById('converter-from').value;
-        const toCurrency = document.getElementById('converter-to').value;
-        
-        if (fromCurrency === toCurrency) {
-            document.getElementById('converter-result').textContent = 'Выберите разные валюты';
-            return;
-        }
-        
-        let result = 0;
-        let resultText = '';
-        
-        // Конвертация из рублей в другую валюту
-        if (fromCurrency === 'RUB') {
-            if (toCurrency === 'USD') {
-                result = amount / currentRates.USD;
-                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} USD`;
-            } else if (toCurrency === 'EUR') {
-                result = amount / currentRates.EUR;
-                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} EUR`;
-            } else if (toCurrency === 'CNY') {
-                result = amount / currentRates.CNY;
-                resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} CNY`;
-            }
-        }
-        // Конвертация из другой валюты в рубли
-        else if (toCurrency === 'RUB') {
-            if (fromCurrency === 'USD') {
-                result = amount * currentRates.USD;
-                resultText = `${amount.toFixed(2)} USD = ${result.toFixed(2)} RUB`;
-            } else if (fromCurrency === 'EUR') {
-                result = amount * currentRates.EUR;
-                resultText = `${amount.toFixed(2)} EUR = ${result.toFixed(2)} RUB`;
-            } else if (fromCurrency === 'CNY') {
-                result = amount * currentRates.CNY;
-                resultText = `${amount.toFixed(2)} CNY = ${result.toFixed(2)} RUB`;
-            }
-        }
-        // Конвертация между двумя валютами (не рублями)
-        else {
-            // Сначала конвертируем в рубли, затем в целевую валюту
-            let rubAmount = 0;
-            if (fromCurrency === 'USD') {
-                rubAmount = amount * currentRates.USD;
-            } else if (fromCurrency === 'EUR') {
-                rubAmount = amount * currentRates.EUR;
-            } else if (fromCurrency === 'CNY') {
-                rubAmount = amount * currentRates.CNY;
+            const amount = parseFloat(document.getElementById('converter-amount').value);
+            if (isNaN(amount)) {
+                document.getElementById('converter-result').textContent = 'Введите корректную сумму';
+                return;
             }
             
-            if (toCurrency === 'USD') {
-                result = rubAmount / currentRates.USD;
-                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} USD`;
-            } else if (toCurrency === 'EUR') {
-                result = rubAmount / currentRates.EUR;
-                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} EUR`;
-            } else if (toCurrency === 'CNY') {
-                result = rubAmount / currentRates.CNY;
-                resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
+            const fromCurrency = document.getElementById('converter-from').value;
+            const toCurrency = document.getElementById('converter-to').value;
+            
+            if (fromCurrency === toCurrency) {
+                document.getElementById('converter-result').textContent = 'Выберите разные валюты';
+                return;
             }
+            
+            let result = 0;
+            let resultText = '';
+            
+            // Если конвертация между фиатными валютами
+            if (['RUB', 'USD', 'EUR', 'CNY'].includes(fromCurrency) && ['RUB', 'USD', 'EUR', 'CNY'].includes(toCurrency)) {
+                // Конвертация из рублей в другую валюту
+                if (fromCurrency === 'RUB') {
+                    if (toCurrency === 'USD') {
+                        result = amount / currentRates.USD;
+                        resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} USD`;
+                    } else if (toCurrency === 'EUR') {
+                        result = amount / currentRates.EUR;
+                        resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} EUR`;
+                    } else if (toCurrency === 'CNY') {
+                        result = amount / currentRates.CNY;
+                        resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} CNY`;
+                    }
+                }
+                // Конвертация из другой валюты в рубли
+                else if (toCurrency === 'RUB') {
+                    if (fromCurrency === 'USD') {
+                        result = amount * currentRates.USD;
+                        resultText = `${amount.toFixed(2)} USD = ${result.toFixed(2)} RUB`;
+                    } else if (fromCurrency === 'EUR') {
+                        result = amount * currentRates.EUR;
+                        resultText = `${amount.toFixed(2)} EUR = ${result.toFixed(2)} RUB`;
+                    } else if (fromCurrency === 'CNY') {
+                        result = amount * currentRates.CNY;
+                        resultText = `${amount.toFixed(2)} CNY = ${result.toFixed(2)} RUB`;
+                    }
+                }
+                // Конвертация между двумя валютами (не рублями)
+                else {
+                    // Сначала конвертируем в рубли, затем в целевую валюту
+                    let rubAmount = 0;
+                    if (fromCurrency === 'USD') {
+                        rubAmount = amount * currentRates.USD;
+                    } else if (fromCurrency === 'EUR') {
+                        rubAmount = amount * currentRates.EUR;
+                    } else if (fromCurrency === 'CNY') {
+                        rubAmount = amount * currentRates.CNY;
+                    }
+                    
+                    if (toCurrency === 'USD') {
+                        result = rubAmount / currentRates.USD;
+                        resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} USD`;
+                    } else if (toCurrency === 'EUR') {
+                        result = rubAmount / currentRates.EUR;
+                        resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} EUR`;
+                    } else if (toCurrency === 'CNY') {
+                        result = rubAmount / currentRates.CNY;
+                        resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
+                    }
+                }
+            }
+            // Если конвертация с участием криптовалют
+            else {
+                // Сначала конвертируем в USD (так как курсы криптовалют у нас в USD)
+                let usdAmount = 0;
+                
+                // Если исходная валюта - фиатная
+                if (fromCurrency === 'USD') {
+                    usdAmount = amount;
+                } else if (fromCurrency === 'RUB') {
+                    usdAmount = amount / currentRates.USD;
+                } else if (fromCurrency === 'EUR') {
+                    usdAmount = amount * (currentRates.USD / currentRates.EUR);
+                } else if (fromCurrency === 'CNY') {
+                    usdAmount = amount * (currentRates.USD / currentRates.CNY);
+                }
+                // Если исходная валюта - криптовалюта
+                else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(fromCurrency)) {
+                    usdAmount = amount * currentCryptoRates[fromCurrency].price;
+                }
+                
+                // Теперь конвертируем из USD в целевую валюту
+                if (toCurrency === 'USD') {
+                    result = usdAmount;
+                    resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} USD`;
+                } else if (toCurrency === 'RUB') {
+                    result = usdAmount * currentRates.USD;
+                    resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} RUB`;
+                } else if (toCurrency === 'EUR') {
+                    result = usdAmount * (currentRates.EUR / currentRates.USD);
+                    resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} EUR`;
+                } else if (toCurrency === 'CNY') {
+                    result = usdAmount * (currentRates.CNY / currentRates.USD);
+                    resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
+                }
+                // Если целевая валюта - криптовалюта
+                else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(toCurrency)) {
+                    result = usdAmount / currentCryptoRates[toCurrency].price;
+                    resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(8)} ${toCurrency}`;
+                }
+            }
+            
+            document.getElementById('converter-result').textContent = resultText;
         }
-        
-        document.getElementById('converter-result').textContent = resultText;
-    }
 
         // Обновление списка топ-акций
         function updateTopStocks(elementId, stocks) {
@@ -756,7 +890,7 @@
 
         // Инициализация - восстанавливаем состояние из localStorage
         function initPanels() {
-            const panels = ['currency-converter-block', 'top-stocks-block', 'currency-rates-block'];
+            const panels = ['currency-converter-block', 'top-stocks-block', 'currency-rates-block', 'crypto-block'];
             
             panels.forEach(panelId => {
                 const isCollapsed = localStorage.getItem(`${panelId}-collapsed`) === 'true';
@@ -788,6 +922,10 @@
         loadCurrencyRates();
         // Обновляем курсы валют каждые 4 часа (так как ЦБ обновляет их раз в день)
         setInterval(loadCurrencyRates, 4 * 60 * 60 * 1000);
+        
+        // Загружаем криптовалюты при старте и каждые 5 минут
+        loadCryptoRates();
+        setInterval(loadCryptoRates, 5 * 60 * 1000);
 
         // Автоматическая конвертация при изменении значений
         document.getElementById('converter-amount').addEventListener('input', convertCurrency);
