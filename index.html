@@ -275,39 +275,79 @@
         }
 
         @media (max-width: 768px) {
-            .content-wrapper {
-                flex-direction: column;
-            }
-            .main-content, .sidebar {
-                width: 100%;
-                min-width: auto;
-            }
-            .sidebar {
-                border-left: none;
-                border-top: 1px solid #333;
+            .header {
                 padding: 10px 15px;
             }
+            
+            .title-container {
+                gap: 10px;
+            }
+            
+            .time-container {
+                gap: 5px;
+                margin-top: 3px;
+            }
+            
+            .time-display {
+                font-size: 10px;
+            }
+            
+            .button-container {
+                justify-content: space-around;
+                padding: 10px 5px;
+            }
+            
+            .image-button {
+                height: 60px;
+                margin: 5px;
+                flex: 0 0 calc(50% - 10px);
+                max-width: calc(50% - 10px);
+            }
+            
+            .sidebar {
+                padding: 8px;
+            }
+            
             .panel-block {
-                margin-bottom: 10px;
+                margin-bottom: 8px;
+            }
+            
+            .ticker-container {
+                padding: 8px 0;
+            }
+            
+            .ticker-item {
+                margin-right: 20px;
+                font-size: 12px;
             }
         }
 
         @media (max-width: 480px) {
-            .time-container {
-                gap: 8px;
-            }
             .time-display {
-                font-size: 11px;
+                font-size: 9px;
             }
-            .button-container {
-                justify-content: center;
-            }
+            
             .image-button {
-                height: 70px;
-                margin: 8px;
+                height: 50px;
+                flex: 0 0 calc(100% - 10px);
+                max-width: calc(100% - 10px);
             }
+            
             .list-item {
                 font-size: 11px;
+                padding: 3px 0;
+            }
+            
+            .panel-block-title {
+                font-size: 12px;
+            }
+            
+            .converter-input, .converter-select {
+                padding: 5px;
+            }
+            
+            .converter-button {
+                padding: 6px;
             }
         }
     </style>
