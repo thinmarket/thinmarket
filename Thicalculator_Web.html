@@ -52,7 +52,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 10px;
       background-color: var(--bg-color);
       color: var(--text-color);
       transition: background-color 0.3s, color 0.3s;
@@ -63,28 +63,33 @@
       max-width: 800px;
       margin: 0 auto;
       background: var(--card-bg);
-      padding: 20px;
+      padding: 15px;
       border-radius: 8px;
       box-shadow: 0 2px 4px var(--shadow-color);
       transition: background-color 0.3s, box-shadow 0.3s;
     }
     
-    /* Стили для вкладок */
+    /* Стили для вкладок - мобильная адаптация */
     .tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 5px;
+      margin-bottom: 15px;
+      overflow-x: auto;
+      padding-bottom: 5px;
+      -webkit-overflow-scrolling: touch;
     }
     
     /* Кнопки вкладок */
     .tab-button {
-      padding: 10px 15px;
+      padding: 8px 12px;
       background: var(--tab-inactive);
       border: none;
       border-radius: 4px;
       cursor: pointer;
       color: var(--text-color);
       transition: background-color 0.3s;
+      white-space: nowrap;
+      font-size: 14px;
     }
     
     /* Активная кнопка вкладки */
@@ -95,7 +100,7 @@
     
     /* Стили для калькуляторов */
     .calculator {
-      margin-top: 20px;
+      margin-top: 15px;
     }
     
     /* Стили для полей ввода */
@@ -108,30 +113,34 @@
       border: 1px solid var(--input-border);
       color: var(--text-color);
       transition: background-color 0.3s, border-color 0.3s;
+      font-size: 16px;
     }
     
     /* Стили для кнопок */
     button {
-      padding: 10px 15px;
+      padding: 10px 12px;
       background: var(--button-bg);
       color: var(--button-text);
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      margin-right: 10px;
+      margin-right: 8px;
+      margin-bottom: 8px;
       transition: background-color 0.3s;
+      font-size: 14px;
     }
     
-    /* Стили для таблиц */
+    /* Стили для таблиц - мобильная адаптация */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 15px;
+      font-size: 14px;
     }
     
     th, td {
       border: 1px solid var(--table-border);
-      padding: 8px;
+      padding: 6px;
       text-align: left;
       transition: border-color 0.3s;
     }
@@ -150,6 +159,7 @@
       overflow-y: auto;
       background-color: var(--card-bg);
       transition: border-color 0.3s, background-color 0.3s;
+      font-size: 14px;
     }
     
     li {
@@ -180,24 +190,29 @@
       border-radius: 4px;
       background-color: var(--history-item-bg);
       transition: border-color 0.3s, background-color 0.3s;
+      font-size: 14px;
     }
 
     /* Переключатель темы */
     .theme-switcher {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 10px;
+      right: 10px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       z-index: 1000;
+      background: var(--card-bg);
+      padding: 5px;
+      border-radius: 20px;
+      box-shadow: 0 1px 3px var(--shadow-color);
     }
     
     .switch {
       position: relative;
       display: inline-block;
-      width: 60px;
-      height: 34px;
+      width: 50px;
+      height: 28px;
     }
     
     .switch input {
@@ -215,14 +230,14 @@
       bottom: 0;
       background-color: #ccc;
       transition: .4s;
-      border-radius: 34px;
+      border-radius: 28px;
     }
     
     .slider:before {
       position: absolute;
       content: "";
-      height: 26px;
-      width: 26px;
+      height: 20px;
+      width: 20px;
       left: 4px;
       bottom: 4px;
       background-color: white;
@@ -235,7 +250,97 @@
     }
     
     input:checked + .slider:before {
-      transform: translateX(26px);
+      transform: translateX(22px);
+    }
+
+    /* Медиа-запросы для мобильной адаптации */
+    @media (max-width: 600px) {
+      body {
+        padding: 5px;
+      }
+      
+      .app {
+        padding: 10px;
+      }
+      
+      h1 {
+        font-size: 20px;
+        margin-top: 30px;
+      }
+      
+      h2 {
+        font-size: 18px;
+      }
+      
+      h3 {
+        font-size: 16px;
+      }
+      
+      .tabs {
+        gap: 3px;
+      }
+      
+      .tab-button {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+      
+      button {
+        padding: 8px 10px;
+        font-size: 13px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+      
+      input {
+        font-size: 14px;
+        padding: 6px;
+      }
+      
+      table {
+        font-size: 12px;
+      }
+      
+      th, td {
+        padding: 4px;
+      }
+      
+      .theme-switcher {
+        top: 5px;
+        right: 5px;
+        font-size: 12px;
+      }
+      
+      .switch {
+        width: 40px;
+        height: 22px;
+      }
+      
+      .slider:before {
+        height: 16px;
+        width: 16px;
+      }
+      
+      input:checked + .slider:before {
+        transform: translateX(18px);
+      }
+    }
+
+    /* Адаптация для очень маленьких экранов */
+    @media (max-width: 400px) {
+      .tab-button {
+        padding: 5px 6px;
+        font-size: 11px;
+      }
+      
+      button {
+        padding: 7px 8px;
+        font-size: 12px;
+      }
+      
+      table {
+        font-size: 11px;
+      }
     }
   </style>
   
@@ -317,7 +422,7 @@
             className={`tab-button ${activeTab === 'averaging' ? 'active' : ''}`}
             onClick={() => setActiveTab('averaging')}
           >
-            Усреднение/Пирамидинг
+            Усреднение
           </button>
           
           <button 
@@ -439,26 +544,28 @@
 
           {/* Отображение результатов в таблице */}
           {results.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Множитель</th>
-                  <th>ATR × Множитель</th>
-                  <th>TP (Цена + ATR)</th>
-                  <th>SL (Цена - ATR)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.multiplier}</td>
-                    <td>{item.value.toFixed(4)}</td>
-                    <td>{item.tp.toFixed(4)}</td>
-                    <td>{item.sl.toFixed(4)}</td>
+            <div style={{overflowX: 'auto'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Множитель</th>
+                    <th>ATR × Множитель</th>
+                    <th>TP (Цена + ATR)</th>
+                    <th>SL (Цена - ATR)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {results.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.multiplier}</td>
+                      <td>{item.value.toFixed(4)}</td>
+                      <td>{item.tp.toFixed(4)}</td>
+                      <td>{item.sl.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {/* История расчетов для этого калькулятора */}
@@ -612,28 +719,30 @@
           {entries.length > 0 && (
             <div>
               <h3>Сделки:</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Лоты</th>
-                    <th>Единиц в лоте</th>
-                    <th>Цена</th>
-                    <th>Всего единиц</th>
-                    <th>Стоимость</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry, index) => (
-                    <tr key={index}>
-                      <td>{entry.lots}</td>
-                      <td>{entry.unitsPerLot}</td>
-                      <td>{entry.price.toFixed(4)}</td>
-                      <td>{entry.units}</td>
-                      <td>{entry.cost.toFixed(4)}</td>
+              <div style={{overflowX: 'auto'}}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Лоты</th>
+                      <th>Единиц в лоте</th>
+                      <th>Цена</th>
+                      <th>Всего единиц</th>
+                      <th>Стоимость</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {entries.map((entry, index) => (
+                      <tr key={index}>
+                        <td>{entry.lots}</td>
+                        <td>{entry.unitsPerLot}</td>
+                        <td>{entry.price.toFixed(4)}</td>
+                        <td>{entry.units}</td>
+                        <td>{entry.cost.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               
               <p><strong>Общее количество единиц:</strong> {totalUnits}</p>
               <p><strong>Общая стоимость:</strong> {totalCost.toFixed(4)}</p>
@@ -758,22 +867,24 @@
 
           {/* Отображение уровней Фибоначчи */}
           {levels.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Уровень (%)</th>
-                  <th>Цена</th>
-                </tr>
-              </thead>
-              <tbody>
-                {levels.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.level.toFixed(1)}</td>
-                    <td>{item.value.toFixed(4)}</td>
+            <div style={{overflowX: 'auto'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Уровень (%)</th>
+                    <th>Цена</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {levels.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.level.toFixed(1)}</td>
+                      <td>{item.value.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {/* История расчетов для этого калькулятора */}
