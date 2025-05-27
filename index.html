@@ -66,8 +66,6 @@
             justify-content: flex-start;
             flex-grow: 1;
         }
-
-        /* Блок с контентом (основной + боковая панель) */
         .content-wrapper {
             display: flex;
             flex-grow: 1;
@@ -88,7 +86,6 @@
             flex-direction: column;
             gap: 15px;
         }
-
         h1 {
             font-size: 28px;
             margin: 0;
@@ -96,8 +93,6 @@
             font-weight: bold;
             min-width: 150px;
         }
-
-        /* Стили для бегущей строки */
         .ticker-container {
             background-color: #1a1a1a;
             color: white;
@@ -128,8 +123,6 @@
             0% { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
-
-        /* Блоки в боковой панели */
         .panel-block {
             background-color: #252525;
             border-radius: 6px;
@@ -173,14 +166,13 @@
         .collapsed .panel-block-toggle i {
             transform: rotate(-90deg);
         }
-
-        /* Стили для списков */
         .list-item {
             display: flex;
             justify-content: space-between;
-            padding: 5px 0;
+            padding: 8px 0;
             align-items: center;
-            white-space: nowrap;
+            position: relative;
+            border-bottom: 1px solid #333;
         }
         .list-name {
             font-weight: bold;
@@ -190,15 +182,24 @@
         }
         .list-value {
             text-align: right;
-            min-width: 50px;
+            min-width: 60px;
         }
         .list-change {
             text-align: right;
             font-weight: bold;
-            min-width: 50px;
+            min-width: 60px;
         }
-
-        /* Колонки для топ-акций */
+        .volume-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            font-size: 0.75em;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
         .stocks-columns {
             display: flex;
             gap: 10px;
@@ -223,8 +224,6 @@
             color: #F44336;
             border-color: #F44336;
         }
-
-        /* Время обновления */
         .update-time {
             font-size: 9px;
             color: #888;
@@ -232,8 +231,6 @@
             margin-top: 5px;
             white-space: nowrap;
         }
-
-        /* Стили для конвертера валют */
         .converter-input {
             width: 100%;
             padding: 6px;
@@ -262,7 +259,6 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .converter-result {
             margin-top: 10px;
             padding: 8px;
@@ -276,47 +272,56 @@
             .header {
                 padding: 10px 15px;
             }
-            
             .title-container {
                 gap: 10px;
             }
-            
             .time-container {
                 gap: 5px;
                 margin-top: 3px;
             }
-            
             .time-display {
                 font-size: 10px;
             }
-            
             .button-container {
                 justify-content: space-around;
                 padding: 10px 5px;
             }
-            
             .image-button {
                 height: 60px;
                 margin: 5px;
                 flex: 0 0 calc(50% - 10px);
                 max-width: calc(50% - 10px);
             }
-            
             .sidebar {
                 padding: 8px;
             }
-            
             .panel-block {
                 margin-bottom: 8px;
             }
-            
             .ticker-container {
                 padding: 8px 0;
             }
-            
             .ticker-item {
                 margin-right: 20px;
                 font-size: 12px;
+            }
+            .list-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 8px 0;
+            }
+            .volume-info {
+                position: static;
+                margin-top: 3px;
+                padding: 0;
+            }
+            .list-name, .list-value, .list-change {
+                max-width: none;
+                min-width: auto;
+                text-align: left;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
             }
         }
 
@@ -324,28 +329,33 @@
             .time-display {
                 font-size: 9px;
             }
-            
             .image-button {
                 height: 50px;
                 flex: 0 0 calc(100% - 10px);
                 max-width: calc(100% - 10px);
             }
-            
             .list-item {
                 font-size: 11px;
-                padding: 3px 0;
             }
-            
             .panel-block-title {
                 font-size: 12px;
             }
-            
             .converter-input, .converter-select {
                 padding: 5px;
             }
-            
             .converter-button {
                 padding: 6px;
+            }
+            .content-wrapper {
+                flex-direction: column;
+            }
+            .main-content, .sidebar {
+                width: 100%;
+                min-width: auto;
+            }
+            .sidebar {
+                border-left: none;
+                border-top: 1px solid #333;
             }
         }
     </style>
@@ -365,14 +375,11 @@
         </div>
     </div>
     
-    <!-- Блок с бегущей строкой котировок -->
     <div class="ticker-container">
         <div class="ticker" id="ticker">Загрузка данных...</div>
     </div>
     
-    <!-- Основное содержимое -->
     <div class="content-wrapper">
-        <!-- Основная часть с кнопками -->
         <div class="main-content">
             <div class="button-container">
                 <a href="products.html">
@@ -390,9 +397,7 @@
             </div>
         </div>
         
-        <!-- Боковая панель с финансовой информацией -->
         <div class="sidebar">
-            <!-- Блок с конвертером валют -->
             <div class="panel-block" id="currency-converter-block">
                 <div class="panel-block-header">
                     <span class="panel-block-title">Конвертер валют</span>
@@ -402,7 +407,6 @@
                 </div>
                 <div class="panel-block-content">
                     <input type="number" id="converter-amount" class="converter-input" placeholder="Сумма" value="0">
-                    
                     <select id="converter-from" class="converter-select">
                         <option value="RUB">Рубли (RUB)</option>
                         <option value="USD">Доллары (USD)</option>
@@ -414,7 +418,6 @@
                         <option value="SOL">Solana (SOL)</option>
                         <option value="XRP">Ripple (XRP)</option>
                     </select>
-                    
                     <select id="converter-to" class="converter-select">
                         <option value="USD">Доллары (USD)</option>
                         <option value="RUB">Рубли (RUB)</option>
@@ -426,13 +429,10 @@
                         <option value="SOL">Solana (SOL)</option>
                         <option value="XRP">Ripple (XRP)</option>
                     </select>
-                    
-                    
                     <div id="converter-result" class="converter-result">Результат появится здесь</div>
                 </div>
             </div>
             
-            <!-- Блок с криптовалютами -->
             <div class="panel-block" id="crypto-block">
                 <div class="panel-block-header">
                     <span class="panel-block-title">Криптовалюты</span>
@@ -446,7 +446,6 @@
                 </div>
             </div>
             
-            <!-- Блок с топ-акциями -->
             <div class="panel-block" id="top-stocks-block">
                 <div class="panel-block-header">
                     <span class="panel-block-title">Топ акции</span>
@@ -469,7 +468,6 @@
                 </div>
             </div>
             
-            <!-- Блок с курсами валют -->
             <div class="panel-block" id="currency-rates-block">
                 <div class="panel-block-header">
                     <span class="panel-block-title">Курсы валют ЦБ РФ</span>
@@ -486,7 +484,6 @@
     </div>
 
     <script>
-        // Функция для обновления времени
         function updateWorldTime() {
             const options = {
                 hour: '2-digit',
@@ -495,59 +492,45 @@
                 hour12: false
             };
             
-            // UTC time
             const utcOptions = {...options, timeZone: 'UTC'};
             const utcFormatter = new Intl.DateTimeFormat('ru-RU', utcOptions);
             const utcTime = utcFormatter.format(new Date());
             document.getElementById('utc-time').textContent = 'UTC: ' + utcTime;
             
-            // Moscow time
             const moscowOptions = {...options, timeZone: 'Europe/Moscow'};
             const moscowFormatter = new Intl.DateTimeFormat('ru-RU', moscowOptions);
             const moscowTime = moscowFormatter.format(new Date());
             document.getElementById('moscow-time').textContent = 'Москва: ' + moscowTime;
             
-            // London time
             const londonOptions = {...options, timeZone: 'Europe/London'};
             const londonFormatter = new Intl.DateTimeFormat('ru-RU', londonOptions);
             const londonTime = londonFormatter.format(new Date());
             document.getElementById('london-time').textContent = 'Лондон: ' + londonTime;
             
-            // New York time
             const nyOptions = {...options, timeZone: 'America/New_York'};
             const nyFormatter = new Intl.DateTimeFormat('ru-RU', nyOptions);
             const nyTime = nyFormatter.format(new Date());
             document.getElementById('newyork-time').textContent = 'Нью-Йорк: ' + nyTime;
             
-            // Hong Kong time
             const hkOptions = {...options, timeZone: 'Asia/Hong_Kong'};
             const hkFormatter = new Intl.DateTimeFormat('ru-RU', hkOptions);
             const hkTime = hkFormatter.format(new Date());
             document.getElementById('hongkong-time').textContent = 'Гонконг: ' + hkTime;
             
-            // Shanghai time
             const shOptions = {...options, timeZone: 'Asia/Shanghai'};
             const shFormatter = new Intl.DateTimeFormat('ru-RU', shOptions);
             const shTime = shFormatter.format(new Date());
             document.getElementById('shanghai-time').textContent = 'Шанхай: ' + shTime;
         }
-        
-        // Конфигурация для котировок
+
         const config = {
-            updateInterval: 30000, // Обновление каждые 30 секунд
+            updateInterval: 30000,
             board: 'TQBR',
             animationDuration: 300,
             topStocksCount: 5
         };
 
-        // Текущие курсы валют
-        let currentRates = {
-            USD: 0,
-            EUR: 0,
-            CNY: 0
-        };
-
-        // Текущие курсы криптовалют (в USD)
+        let currentRates = { USD: 0, EUR: 0, CNY: 0 };
         let currentCryptoRates = {
             BTC: { price: 0, change: 0 },
             ETH: { price: 0, change: 0 },
@@ -556,66 +539,32 @@
             XRP: { price: 0, change: 0 }
         };
 
-        // Основные функции для котировок
         async function loadData() {
             try {
-                // Получаем список акций и их текущие цены
-                const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/${config.board}/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST,LASTTOPREVPRICE`;
-                
+                const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/${config.board}/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST,LASTTOPREVPRICE,VOLTODAY,VALTODAY`;
                 const response = await fetch(url);
                 const data = await response.json();
-                
-                // Обрабатываем данные
                 const securities = data.securities.data;
                 const marketData = data.marketdata.data;
-                
-                // Создаем массив акций с данными
                 const stocks = securities.map(security => {
                     const ticker = security[0];
                     const name = security[1];
                     const stockData = marketData.find(item => item[0] === ticker);
-                    
                     return {
                         ticker,
                         name,
                         price: stockData ? stockData[1] : null,
-                        change: stockData ? stockData[2] : null
+                        change: stockData ? stockData[2] : null,
+                        volume: stockData ? stockData[3] : null,
+                        turnover: stockData ? stockData[4] : null
                     };
                 }).filter(stock => stock.price !== null && stock.change !== null);
-                
-                // Сортируем акции по изменению цены
                 const sortedStocks = [...stocks].sort((a, b) => b.change - a.change);
-                
-                // Получаем топ роста и падения
                 const topGainers = sortedStocks.slice(0, config.topStocksCount);
                 const topLosers = sortedStocks.slice(-config.topStocksCount).reverse();
-                
-                // Обновляем топ-акции
                 updateTopStocks('top-gainers', topGainers);
                 updateTopStocks('top-losers', topLosers);
-                
-                // Создаем бегущую строку
-                let tickerContent = '';
-                
-                stocks.forEach(stock => {
-                    const changeClass = stock.change > 0 ? 'up' : (stock.change < 0 ? 'down' : '');
-                    
-                    tickerContent += `
-                        <span class="ticker-item">
-                            <span class="ticker-name">${stock.ticker}</span>
-                            ${stock.price ? stock.price.toFixed(2) + ' RUB' : '-'}
-                            <span class="${changeClass}">
-                                ${stock.change ? (stock.change > 0 ? '+' : '') + stock.change.toFixed(2) + '%' : ''}
-                            </span>
-                        </span>
-                    `;
-                });
-                
-                document.getElementById('ticker').innerHTML = tickerContent;
-                
-                // Динамически регулируем скорость анимации
-                adjustAnimationSpeed();
-                
+                updateTicker(stocks);
             } catch (error) {
                 console.error('Ошибка:', error);
                 document.getElementById('ticker').innerHTML = 'Ошибка загрузки данных';
@@ -624,49 +573,26 @@
             }
         }
 
-        // Функция для загрузки курсов валют с ЦБ РФ
         async function loadCurrencyRates() {
             try {
-                // URL для получения курсов валют (доллар, евро, юань)
                 const url = `https://www.cbr-xml-daily.ru/daily_json.js`;
-                
                 const response = await fetch(url);
                 const data = await response.json();
-                
-                // Форматируем дату обновления
                 const updateDate = new Date(data.Date);
                 const options = {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: false
                 };
                 const formattedUpdateTime = updateDate.toLocaleString('ru-RU', options);
-                
-                // Обновляем время последнего обновления
                 document.getElementById('currency-update-time').textContent = `Обновлено: ${formattedUpdateTime}`;
-                
-                // Получаем нужные валюты
                 const usd = data.Valute.USD;
                 const eur = data.Valute.EUR;
                 const cny = data.Valute.CNY;
-                
-                // Сохраняем текущие курсы для конвертера
                 currentRates.USD = usd.Value;
                 currentRates.EUR = eur.Value;
                 currentRates.CNY = cny.Value;
-                
-                // Рассчитываем изменение по сравнению с предыдущим значением
-                const calculateChange = (current, previous) => {
-                    return ((current - previous) / previous * 100).toFixed(2);
-                };
-                
-                // Создаем HTML для отображения курсов валют
+                const calculateChange = (current, previous) => ((current - previous) / previous * 100).toFixed(2);
                 let currencyContent = '';
-                
-                // Доллар США
                 const usdChange = calculateChange(usd.Value, usd.Previous);
                 const usdChangeClass = usdChange > 0 ? 'up' : (usdChange < 0 ? 'down' : '');
                 currencyContent += `
@@ -676,8 +602,6 @@
                         <span class="list-change ${usdChangeClass}">${usdChange > 0 ? '+' : ''}${usdChange}%</span>
                     </div>
                 `;
-                
-                // Евро
                 const eurChange = calculateChange(eur.Value, eur.Previous);
                 const eurChangeClass = eurChange > 0 ? 'up' : (eurChange < 0 ? 'down' : '');
                 currencyContent += `
@@ -687,8 +611,6 @@
                         <span class="list-change ${eurChangeClass}">${eurChange > 0 ? '+' : ''}${eurChange}%</span>
                     </div>
                 `;
-                
-                // Китайский юань
                 const cnyChange = calculateChange(cny.Value, cny.Previous);
                 const cnyChangeClass = cnyChange > 0 ? 'up' : (cnyChange < 0 ? 'down' : '');
                 currencyContent += `
@@ -698,9 +620,7 @@
                         <span class="list-change ${cnyChangeClass}">${cnyChange > 0 ? '+' : ''}${cnyChange}%</span>
                     </div>
                 `;
-                
                 document.getElementById('currency-rates').innerHTML = currencyContent;
-                
             } catch (error) {
                 console.error('Ошибка загрузки курсов валют:', error);
                 document.getElementById('currency-rates').innerHTML = '<div class="list-item">Ошибка загрузки</div>';
@@ -708,16 +628,11 @@
             }
         }
 
-        // Функция для загрузки курсов криптовалют
         async function loadCryptoRates() {
             try {
-                // Используем CoinGecko API без ключа (бесплатный лимит: 10-30 запросов в минуту)
                 const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,ripple&price_change_percentage=24h';
-                
                 const response = await fetch(url);
                 const data = await response.json();
-                
-                // Обновляем данные
                 data.forEach(crypto => {
                     const symbol = crypto.symbol.toUpperCase();
                     if (currentCryptoRates[symbol]) {
@@ -725,26 +640,19 @@
                         currentCryptoRates[symbol].change = crypto.price_change_percentage_24h;
                     }
                 });
-                
-                // Обновляем отображение
                 updateCryptoDisplay();
-                
             } catch (error) {
                 console.error('Ошибка загрузки криптовалют:', error);
                 document.getElementById('crypto-rates').innerHTML = '<div class="list-item">Ошибка загрузки</div>';
             }
         }
 
-        // Функция для обновления отображения криптовалют
         function updateCryptoDisplay() {
             const container = document.getElementById('crypto-rates');
             container.innerHTML = '';
-            
-            // Добавляем основные криптовалюты
             Object.entries(currentCryptoRates).forEach(([symbol, data]) => {
                 const changeClass = data.change > 0 ? 'up' : (data.change < 0 ? 'down' : '');
                 const changeSign = data.change > 0 ? '+' : '';
-                
                 const cryptoElement = document.createElement('div');
                 cryptoElement.className = 'list-item';
                 cryptoElement.innerHTML = `
@@ -752,12 +660,10 @@
                     <span class="list-value">${data.price.toFixed(2)} $</span>
                     <span class="list-change ${changeClass}">${changeSign}${data.change.toFixed(2)}%</span>
                 `;
-                
                 container.appendChild(cryptoElement);
             });
         }
 
-        // Вспомогательная функция для получения полного названия криптовалюты
         function getCryptoName(symbol) {
             const names = {
                 'BTC': 'Bitcoin',
@@ -775,21 +681,15 @@
                 document.getElementById('converter-result').textContent = 'Введите корректную сумму';
                 return;
             }
-            
             const fromCurrency = document.getElementById('converter-from').value;
             const toCurrency = document.getElementById('converter-to').value;
-            
             if (fromCurrency === toCurrency) {
                 document.getElementById('converter-result').textContent = 'Выберите разные валюты';
                 return;
             }
-            
             let result = 0;
             let resultText = '';
-            
-            // Если конвертация между фиатными валютами
             if (['RUB', 'USD', 'EUR', 'CNY'].includes(fromCurrency) && ['RUB', 'USD', 'EUR', 'CNY'].includes(toCurrency)) {
-                // Конвертация из рублей в другую валюту
                 if (fromCurrency === 'RUB') {
                     if (toCurrency === 'USD') {
                         result = amount / currentRates.USD;
@@ -801,9 +701,7 @@
                         result = amount / currentRates.CNY;
                         resultText = `${amount.toFixed(2)} RUB = ${result.toFixed(2)} CNY`;
                     }
-                }
-                // Конвертация из другой валюты в рубли
-                else if (toCurrency === 'RUB') {
+                } else if (toCurrency === 'RUB') {
                     if (fromCurrency === 'USD') {
                         result = amount * currentRates.USD;
                         resultText = `${amount.toFixed(2)} USD = ${result.toFixed(2)} RUB`;
@@ -814,10 +712,7 @@
                         result = amount * currentRates.CNY;
                         resultText = `${amount.toFixed(2)} CNY = ${result.toFixed(2)} RUB`;
                     }
-                }
-                // Конвертация между двумя валютами (не рублями)
-                else {
-                    // Сначала конвертируем в рубли, затем в целевую валюту
+                } else {
                     let rubAmount = 0;
                     if (fromCurrency === 'USD') {
                         rubAmount = amount * currentRates.USD;
@@ -826,7 +721,6 @@
                     } else if (fromCurrency === 'CNY') {
                         rubAmount = amount * currentRates.CNY;
                     }
-                    
                     if (toCurrency === 'USD') {
                         result = rubAmount / currentRates.USD;
                         resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} USD`;
@@ -838,13 +732,8 @@
                         resultText = `${amount.toFixed(2)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
                     }
                 }
-            }
-            // Если конвертация с участием криптовалют
-            else {
-                // Сначала конвертируем в USD (так как курсы криптовалют у нас в USD)
+            } else {
                 let usdAmount = 0;
-                
-                // Если исходная валюта - фиатная
                 if (fromCurrency === 'USD') {
                     usdAmount = amount;
                 } else if (fromCurrency === 'RUB') {
@@ -853,13 +742,9 @@
                     usdAmount = amount * (currentRates.USD / currentRates.EUR);
                 } else if (fromCurrency === 'CNY') {
                     usdAmount = amount * (currentRates.USD / currentRates.CNY);
-                }
-                // Если исходная валюта - криптовалюта
-                else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(fromCurrency)) {
+                } else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(fromCurrency)) {
                     usdAmount = amount * currentCryptoRates[fromCurrency].price;
                 }
-                
-                // Теперь конвертируем из USD в целевую валюту
                 if (toCurrency === 'USD') {
                     result = usdAmount;
                     resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} USD`;
@@ -872,73 +757,93 @@
                 } else if (toCurrency === 'CNY') {
                     result = usdAmount * (currentRates.CNY / currentRates.USD);
                     resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(2)} CNY`;
-                }
-                // Если целевая валюта - криптовалюта
-                else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(toCurrency)) {
+                } else if (['BTC', 'ETH', 'BNB', 'SOL', 'XRP'].includes(toCurrency)) {
                     result = usdAmount / currentCryptoRates[toCurrency].price;
                     resultText = `${amount.toFixed(8)} ${fromCurrency} = ${result.toFixed(8)} ${toCurrency}`;
                 }
             }
-            
             document.getElementById('converter-result').textContent = resultText;
         }
 
-        // Обновление списка топ-акций
         function updateTopStocks(elementId, stocks) {
             const container = document.getElementById(elementId);
             container.innerHTML = '';
-            
             stocks.forEach(stock => {
                 const changeClass = stock.change > 0 ? 'up' : 'down';
                 const changeSign = stock.change > 0 ? '+' : '';
+                const volumeText = stock.volume ? formatNumber(stock.volume) + ' шт' : '-';
+                const turnoverText = stock.turnover ? formatCurrency(stock.turnover) + ' ₽' : '-';
                 
                 const stockElement = document.createElement('div');
                 stockElement.className = 'list-item';
                 stockElement.innerHTML = `
                     <span class="list-name" title="${stock.name}">${stock.ticker}</span>
-                    <span class="list-value">${stock.price.toFixed(2)}</span>
+                    <span class="list-value">${stock.price.toFixed(2)} ₽</span>
                     <span class="list-change ${changeClass}">${changeSign}${stock.change.toFixed(2)}%</span>
+                    <div class="volume-info">
+                        <span title="Объем торгов">${volumeText}</span>
+                        <span title="Оборот">${turnoverText}</span>
+                    </div>
                 `;
-                
                 container.appendChild(stockElement);
             });
         }
 
-        // Регулировка скорости анимации
+        function updateTicker(stocks) {
+            let tickerContent = '';
+            stocks.forEach(stock => {
+                const changeClass = stock.change > 0 ? 'up' : (stock.change < 0 ? 'down' : '');
+                tickerContent += `
+                    <span class="ticker-item">
+                        <span class="ticker-name">${stock.ticker}</span>
+                        ${stock.price ? stock.price.toFixed(2) + ' ₽' : '-'}
+                        <span class="${changeClass}">
+                            ${stock.change ? (stock.change > 0 ? '+' : '') + stock.change.toFixed(2) + '%' : ''}
+                        </span>
+                        <span style="color: #aaa; font-size: 0.9em; margin-left: 5px;">
+                            ${stock.volume ? formatNumber(stock.volume) + ' шт' : ''}
+                        </span>
+                    </span>
+                `;
+            });
+            document.getElementById('ticker').innerHTML = tickerContent;
+            adjustAnimationSpeed();
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + ' млрд';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + ' млн';
+            if (num >= 1000) return (num / 1000).toFixed(1) + ' тыс';
+            return num.toString();
+        }
+        function formatCurrency(amount) {
+            if (amount >= 1000000000) return (amount / 1000000000).toFixed(1) + ' млрд';
+            if (amount >= 1000000) return (amount / 1000000).toFixed(1) + ' млн';
+            if (amount >= 1000) return (amount / 1000).toFixed(1) + ' тыс';
+            return amount.toFixed(2);
+        }
+
         function adjustAnimationSpeed() {
             const ticker = document.getElementById('ticker');
             const itemsCount = ticker.querySelectorAll('.ticker-item').length;
-            
-            // Рассчитываем оптимальное время анимации
-            const duration = Math.max(120, itemsCount * 2); // Минимум 120 секунд
-            
+            const duration = Math.max(120, itemsCount * 2);
             ticker.style.animationDuration = `${duration}s`;
         }
 
-        // Переключение отображения панели
         function togglePanel(panelId) {
             const panel = document.getElementById(panelId);
             panel.classList.toggle('collapsed');
-            
-            // Сохраняем состояние в localStorage
             const isCollapsed = panel.classList.contains('collapsed');
             localStorage.setItem(`${panelId}-collapsed`, isCollapsed);
         }
 
-        // Инициализация - восстанавливаем состояние из localStorage
         function initPanels() {
             const panels = ['currency-converter-block', 'top-stocks-block', 'currency-rates-block', 'crypto-block'];
-            
             panels.forEach(panelId => {
                 const isCollapsed = localStorage.getItem(`${panelId}-collapsed`) === 'true';
                 const panel = document.getElementById(panelId);
-                
-                if (isCollapsed) {
-                    panel.classList.add('collapsed');
-                }
+                if (isCollapsed) panel.classList.add('collapsed');
             });
-            
-            // На мобильных сворачиваем по умолчанию
             if (window.innerWidth <= 768) {
                 panels.forEach(panelId => {
                     if (!localStorage.getItem(`${panelId}-collapsed`)) {
@@ -949,22 +854,15 @@
             }
         }
 
-        // Запускаем обновление времени и котировок
         updateWorldTime();
         setInterval(updateWorldTime, 1000);
-        
         loadData();
         setInterval(loadData, config.updateInterval);
-        
         loadCurrencyRates();
-        // Обновляем курсы валют каждые 4 часа (так как ЦБ обновляет их раз в день)
         setInterval(loadCurrencyRates, 4 * 60 * 60 * 1000);
-        
-        // Загружаем криптовалюты при старте и каждые 5 минут
         loadCryptoRates();
         setInterval(loadCryptoRates, 5 * 60 * 1000);
 
-        // Автоматическая конвертация при изменении значений
         document.getElementById('converter-amount').addEventListener('input', convertCurrency);
         document.getElementById('converter-from').addEventListener('change', convertCurrency);
         document.getElementById('converter-to').addEventListener('change', convertCurrency);
