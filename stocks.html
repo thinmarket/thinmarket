@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - Список акций</title>
+    <style>
+        body {
+            background-color: #2E2E2E;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* Обновленный header */
+        .header {
+            background-color: #1E1E1E;
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        h1.title {
+            font-size: 28px;
+            margin: 0;
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .time-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 100%;
+            font-size: 13px;
+        }
+        
+        .time-display {
+            color: #ccc;
+            font-weight: normal;
+            white-space: nowrap;
+        }
+        
+        .utc-time {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .ticker-container {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 12px 0;
+            overflow: hidden;
+            position: relative;
+            border-top: 1px solid #333;
+            flex-shrink: 0;
+        }
+        
+        .ticker {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: ticker 300s linear infinite;
+        }
+        
+        .ticker-item {
+            display: inline-block;
+            margin-right: 40px;
+            font-size: 14px;
+        }
+        
+        .ticker-name {
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .up { color: #4CAF50; }
+        .down { color: #F44336; }
+        
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        
+        .content-wrapper {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        
+        h1.page-title {
+            font-size: 28px;
+            margin: 0 0 20px 0;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .filters-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background-color: #252525;
+            padding: 15px;
+            border-radius: 6px;
+            justify-content: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+            flex: 1;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaa;
+            text-align: center;
+        }
+        
+        .filter-input {
+            padding: 8px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .filter-select {
+            padding: 8px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        
+        .stocks-table-container {
+            width: 100%;
+            overflow-x: auto;
+            background-color: #252525;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        
+        .stocks-table th {
+            background-color: #1E1E1E;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+            position: sticky;
+            top: 0;
+        }
+        
+        .stocks-table th:hover {
+            background-color: #333;
+        }
+        
+        .stocks-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .stocks-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .stocks-table tr:hover {
+            background-color: #333;
+        }
+        
+        .sort-icon {
+            margin-left: 5px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .page-button {
+            padding: 8px 12px;
+            background-color: #333;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 36px;
+        }
+        
+        .page-button.active {
+            background-color: #4CAF50;
+        }
+        
+        .page-button:hover:not(.active) {
+            background-color: #444;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #aaa;
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        
+        .back-button:hover {
+            background-color: #45a049;
+        }
+        
+        .number-cell {
+            font-family: monospace;
+        }
+        
+        .mobile-hidden {
+            display: table-cell;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            h1.title {
+                font-size: 24px;
+            }
+            
+            h1.page-title {
+                font-size: 22px;
+            }
+            
+            .time-container {
+                gap: 8px;
+                font-size: 11px;
+            }
+            
+            .filters-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-group {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .stocks-table th, .stocks-table td {
+                padding: 8px 5px;
+                font-size: 12px;
+            }
+            
+            .mobile-hidden {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1.title {
+                font-size: 20px;
+            }
+            
+            h1.page-title {
+                font-size: 18px;
+            }
+            
+            .time-container {
+                font-size: 10px;
+                gap: 5px;
+            }
+            
+            .content-wrapper {
+                padding: 10px;
+            }
+            
+            .stocks-table th, .stocks-table td {
+                font-size: 11px;
+                padding: 6px 3px;
+            }
+            
+            .page-button {
+                padding: 6px 8px;
+                min-width: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-container">
+            <h1 class="title">ThinMarket</h1>
+        </div>
+        <div class="time-container">
+            <span class="time-display utc-time" id="utc-time"></span>
+            <span class="time-display" id="moscow-time"></span>
+            <span class="time-display" id="london-time"></span>
+            <span class="time-display mobile-hidden" id="newyork-time"></span>
+            <span class="time-display mobile-hidden" id="hongkong-time"></span>
+            <span class="time-display mobile-hidden" id="shanghai-time"></span>
+        </div>
+    </div>
+    
+    <div class="ticker-container">
+        <div class="ticker" id="ticker">Загрузка данных...</div>
+    </div>
+    
+    <div class="content-wrapper">
+        <a href="index.html" class="back-button">← На главную</a>
+        <h1 class="page-title">Список акций MOEX</h1>
+        
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label">Поиск по названию</label>
+                <input type="text" id="search-input" class="filter-input" placeholder="Введите название или тикер">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Изменение (%)</label>
+                <select id="change-filter" class="filter-select">
+                    <option value="all">Все</option>
+                    <option value="positive">Рост</option>
+                    <option value="negative">Снижение</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Мин. объем (шт)</label>
+                <input type="number" id="volume-min" class="filter-input" placeholder="От">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Мин. оборот (руб)</label>
+                <input type="number" id="turnover-min" class="filter-input" placeholder="От">
+            </div>
+        </div>
+        
+        <div id="stocks-container">
+            <div class="stocks-table-container">
+                <table class="stocks-table">
+                    <thead>
+                        <tr>
+                            <th id="sort-ticker" data-sort="ticker" data-order="asc">Тикер <span class="sort-icon">▼</span></th>
+                            <th id="sort-name" data-sort="name" data-order="none">Название</th>
+                            <th id="sort-price" data-sort="price" data-order="none">Цена (₽)</th>
+                            <th id="sort-change" data-sort="change" data-order="none">Изменение (%)</th>
+                            <th id="sort-volume" data-sort="volume" data-order="none">Объем</th>
+                            <th id="sort-turnover" data-sort="turnover" data-order="none">Оборот</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stocks-table-body">
+                        <tr>
+                            <td colspan="6" class="loading">Загрузка данных...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <!-- Пагинация будет добавлена через JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация
+        const config = {
+            itemsPerPage: 15,
+            board: 'TQBR',
+            updateInterval: 30000
+        };
+
+        // Глобальные переменные
+        let allStocks = [];
+        let filteredStocks = [];
+        let currentPage = 1;
+        let currentSort = { column: 'ticker', order: 'asc' };
+
+        // Функция для обновления времени
+        function updateWorldTime() {
+            const options = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            
+            const utcOptions = {...options, timeZone: 'UTC'};
+            const utcFormatter = new Intl.DateTimeFormat('ru-RU', utcOptions);
+            const utcTime = utcFormatter.format(new Date());
+            document.getElementById('utc-time').textContent = 'UTC: ' + utcTime;
+            
+            const moscowOptions = {...options, timeZone: 'Europe/Moscow'};
+            const moscowFormatter = new Intl.DateTimeFormat('ru-RU', moscowOptions);
+            const moscowTime = moscowFormatter.format(new Date());
+            document.getElementById('moscow-time').textContent = 'Москва: ' + moscowTime;
+            
+            const londonOptions = {...options, timeZone: 'Europe/London'};
+            const londonFormatter = new Intl.DateTimeFormat('ru-RU', londonOptions);
+            const londonTime = londonFormatter.format(new Date());
+            document.getElementById('london-time').textContent = 'Лондон: ' + londonTime;
+            
+            const nyOptions = {...options, timeZone: 'America/New_York'};
+            const nyFormatter = new Intl.DateTimeFormat('ru-RU', nyOptions);
+            const nyTime = nyFormatter.format(new Date());
+            document.getElementById('newyork-time').textContent = 'Нью-Йорк: ' + nyTime;
+            
+            const hkOptions = {...options, timeZone: 'Asia/Hong_Kong'};
+            const hkFormatter = new Intl.DateTimeFormat('ru-RU', hkOptions);
+            const hkTime = hkFormatter.format(new Date());
+            document.getElementById('hongkong-time').textContent = 'Гонконг: ' + hkTime;
+            
+            const shOptions = {...options, timeZone: 'Asia/Shanghai'};
+            const shFormatter = new Intl.DateTimeFormat('ru-RU', shOptions);
+            const shTime = shFormatter.format(new Date());
+            document.getElementById('shanghai-time').textContent = 'Шанхай: ' + shTime;
+        }
+
+        // Загрузка данных с MOEX
+        async function loadStocksData() {
+            try {
+                const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/${config.board}/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST,LASTTOPREVPRICE,VOLTODAY,VALTODAY`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const securities = data.securities.data;
+                const marketData = data.marketdata.data;
+                
+                allStocks = securities.map(security => {
+                    const ticker = security[0];
+                    const name = security[1];
+                    const stockData = marketData.find(item => item[0] === ticker);
+                    
+                    return {
+                        ticker,
+                        name,
+                        price: stockData ? stockData[1] : null,
+                        change: stockData ? stockData[2] : null,
+                        volume: stockData ? stockData[3] : null,
+                        turnover: stockData ? stockData[4] : null
+                    };
+                }).filter(stock => stock.price !== null && stock.change !== null);
+                
+                // Обновляем тикер
+                updateTicker(allStocks);
+                
+                // Применяем фильтры и сортировку
+                applyFilters();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                document.getElementById('stocks-table-body').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="color: #F44336;">Ошибка загрузки данных. Попробуйте обновить страницу.</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Применение фильтров
+        function applyFilters() {
+            const searchText = document.getElementById('search-input').value.toLowerCase();
+            const changeFilter = document.getElementById('change-filter').value;
+            const volumeMin = parseFloat(document.getElementById('volume-min').value) || 0;
+            const turnoverMin = parseFloat(document.getElementById('turnover-min').value) || 0;
+            
+            filteredStocks = allStocks.filter(stock => {
+                // Фильтр по поиску
+                const matchesSearch = stock.ticker.toLowerCase().includes(searchText) || 
+                                     stock.name.toLowerCase().includes(searchText);
+                
+                // Фильтр по изменению
+                let matchesChange = true;
+                if (changeFilter === 'positive' && stock.change <= 0) matchesChange = false;
+                if (changeFilter === 'negative' && stock.change >= 0) matchesChange = false;
+                
+                // Фильтр по объему
+                const matchesVolume = stock.volume >= volumeMin;
+                
+                // Фильтр по обороту
+                const matchesTurnover = stock.turnover >= turnoverMin;
+                
+                return matchesSearch && matchesChange && matchesVolume && matchesTurnover;
+            });
+            
+            // Сортировка
+            sortStocks();
+            
+            // Обновление таблицы
+            updateStocksTable();
+        }
+
+        // Сортировка акций
+        function sortStocks() {
+            const { column, order } = currentSort;
+            
+            filteredStocks.sort((a, b) => {
+                let valueA = a[column];
+                let valueB = b[column];
+                
+                // Для строк - сортировка по алфавиту
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                    return order === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+                }
+                
+                // Для чисел - числовая сортировка
+                if (valueA === null) valueA = order === 'asc' ? -Infinity : Infinity;
+                if (valueB === null) valueB = order === 'asc' ? -Infinity : Infinity;
+                
+                return order === 'asc' ? valueA - valueB : valueB - valueA;
+            });
+        }
+
+        // Обновление таблицы с акциями
+        function updateStocksTable() {
+            const tableBody = document.getElementById('stocks-table-body');
+            const startIndex = (currentPage - 1) * config.itemsPerPage;
+            const endIndex = startIndex + config.itemsPerPage;
+            const paginatedStocks = filteredStocks.slice(startIndex, endIndex);
+            
+            if (paginatedStocks.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center;">Акции не найдены. Попробуйте изменить параметры фильтра.</td>
+                    </tr>
+                `;
+                updatePagination();
+                return;
+            }
+            
+            let html = '';
+            paginatedStocks.forEach(stock => {
+                const changeClass = stock.change > 0 ? 'up' : (stock.change < 0 ? 'down' : '');
+                const changeSign = stock.change > 0 ? '+' : '';
+                
+                html += `
+                    <tr>
+                        <td><strong>${stock.ticker}</strong></td>
+                        <td title="${stock.name}">${truncateText(stock.name, 20)}</td>
+                        <td class="number-cell">${stock.price.toFixed(2)}</td>
+                        <td class="number-cell ${changeClass}">${changeSign}${stock.change.toFixed(2)}%</td>
+                        <td class="number-cell">${formatNumber(stock.volume)}</td>
+                        <td class="number-cell">${formatNumber(stock.turnover)}</td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+            updatePagination();
+        }
+
+        // Обновление пагинации
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredStocks.length / config.itemsPerPage);
+            const paginationContainer = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Кнопка "Назад"
+            if (currentPage > 1) {
+                html += `<button class="page-button" onclick="changePage(${currentPage - 1})">←</button>`;
+            }
+            
+            // Первая страница
+            if (startPage > 1) {
+                html += `<button class="page-button" onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span style="padding: 8px 6px;">...</span>`;
+                }
+            }
+            
+            // Страницы
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-button ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+            
+            // Последняя страница
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span style="padding: 8px 6px;">...</span>`;
+                }
+                html += `<button class="page-button" onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            // Кнопка "Вперед"
+            if (currentPage < totalPages) {
+                html += `<button class="page-button" onclick="changePage(${currentPage + 1})">→</button>`;
+            }
+            
+            paginationContainer.innerHTML = html;
+        }
+
+        // Смена страницы
+        function changePage(page) {
+            currentPage = page;
+            updateStocksTable();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Сортировка по колонке
+        function sortByColumn(columnId) {
+            const columnElement = document.getElementById(columnId);
+            const column = columnElement.dataset.sort;
+            
+            // Сбрасываем сортировку для всех колонок
+            document.querySelectorAll('[data-sort]').forEach(el => {
+                if (el.id !== columnId) {
+                    el.dataset.order = 'none';
+                    el.innerHTML = el.innerHTML.replace(/▼|▲/, '');
+                }
+            });
+            
+            // Определяем направление сортировки
+            let order = 'asc';
+            if (columnElement.dataset.order === 'asc') {
+                order = 'desc';
+                columnElement.innerHTML = columnElement.innerHTML.replace('▼', '▲');
+            } else if (columnElement.dataset.order === 'desc') {
+                order = 'none';
+                columnElement.innerHTML = columnElement.innerHTML.replace('▲', '');
+            } else {
+                columnElement.innerHTML += ' <span class="sort-icon">▼</span>';
+            }
+            
+            // Обновляем текущую сортировку
+            columnElement.dataset.order = order;
+            
+            if (order === 'none') {
+                currentSort = { column: 'ticker', order: 'asc' };
+                document.getElementById('sort-ticker').dataset.order = 'asc';
+                document.getElementById('sort-ticker').innerHTML = 'Тикер <span class="sort-icon">▼</span>';
+            } else {
+                currentSort = { column, order };
+            }
+            
+            // Применяем сортировку и обновляем таблицу
+            applyFilters();
+        }
+
+        // Форматирование чисел (без сокращений)
+        function formatNumber(num) {
+            if (num === null) return '-';
+            return num.toLocaleString('ru-RU');
+        }
+
+        // Обрезание длинного текста
+        function truncateText(text, maxLength) {
+            if (text.length > maxLength) {
+                return text.substring(0, maxLength) + '...';
+            }
+            return text;
+        }
+
+        // Обновление тикера
+        function updateTicker(stocks) {
+            let tickerContent = '';
+            stocks.forEach(stock => {
+                const changeClass = stock.change > 0 ? 'up' : (stock.change < 0 ? 'down' : '');
+                tickerContent += `
+                    <span class="ticker-item">
+                        <span class="ticker-name">${stock.ticker}</span>
+                        ${stock.price ? stock.price.toFixed(2) + ' ₽' : '-'}
+                        <span class="${changeClass}">
+                            ${stock.change ? (stock.change > 0 ? '+' : '') + stock.change.toFixed(2) + '%' : ''}
+                        </span>
+                        <span style="color: #aaa; font-size: 0.9em; margin-left: 5px;">
+                            ${stock.volume ? formatNumber(stock.volume) + ' шт' : ''}
+                        </span>
+                    </span>
+                `;
+            });
+            document.getElementById('ticker').innerHTML = tickerContent;
+            adjustAnimationSpeed();
+        }
+
+        // Настройка скорости анимации тикера
+        function adjustAnimationSpeed() {
+            const ticker = document.getElementById('ticker');
+            const itemsCount = ticker.querySelectorAll('.ticker-item').length;
+            const duration = Math.max(120, itemsCount * 2);
+            ticker.style.animationDuration = `${duration}s`;
+        }
+
+        // Инициализация
+        function init() {
+            updateWorldTime();
+            setInterval(updateWorldTime, 1000);
+            
+            loadStocksData();
+            setInterval(loadStocksData, config.updateInterval);
+            
+            // Назначение обработчиков событий
+            document.getElementById('search-input').addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            document.getElementById('change-filter').addEventListener('change', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            document.getElementById('volume-min').addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            document.getElementById('turnover-min').addEventListener('input', () => {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            // Обработчики для сортировки
+            document.getElementById('sort-ticker').addEventListener('click', () => sortByColumn('sort-ticker'));
+            document.getElementById('sort-name').addEventListener('click', () => sortByColumn('sort-name'));
+            document.getElementById('sort-price').addEventListener('click', () => sortByColumn('sort-price'));
+            document.getElementById('sort-change').addEventListener('click', () => sortByColumn('sort-change'));
+            document.getElementById('sort-volume').addEventListener('click', () => sortByColumn('sort-volume'));
+            document.getElementById('sort-turnover').addEventListener('click', () => sortByColumn('sort-turnover'));
+        }
+
+        // Запуск при загрузке страницы
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
