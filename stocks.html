@@ -16,34 +16,40 @@
             min-height: 100vh;
         }
         
-        /* Обновленный header как в index.html */
+        /* Обновленный header */
         .header {
             background-color: #1E1E1E;
             padding: 15px 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             flex-shrink: 0;
         }
         
         .title-container {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
             width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        h1.title {
+            font-size: 28px;
+            margin: 0;
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
         }
         
         .time-container {
             display: flex;
-            gap: 15px;
-            align-items: center;
             flex-wrap: wrap;
-            margin-top: 5px;
+            gap: 15px;
+            width: 100%;
+            font-size: 13px;
         }
         
         .time-display {
-            font-size: 13px;
             color: #ccc;
             font-weight: normal;
             white-space: nowrap;
@@ -52,14 +58,6 @@
         .utc-time {
             color: #4CAF50;
             font-weight: bold;
-        }
-        
-        h1.title {
-            font-size: 28px;
-            margin: 0;
-            color: #fff;
-            font-weight: bold;
-            min-width: 150px;
         }
         
         .ticker-container {
@@ -260,13 +258,13 @@
             font-family: monospace;
         }
         
+        .mobile-hidden {
+            display: table-cell;
+        }
+
         @media (max-width: 768px) {
             .header {
                 padding: 10px 15px;
-            }
-            
-            .title-container {
-                gap: 10px;
             }
             
             h1.title {
@@ -296,13 +294,13 @@
                 padding: 8px 5px;
                 font-size: 12px;
             }
+            
+            .mobile-hidden {
+                display: none;
+            }
         }
 
         @media (max-width: 480px) {
-            .header {
-                padding: 10px;
-            }
-            
             h1.title {
                 font-size: 20px;
             }
@@ -330,20 +328,118 @@
                 min-width: 30px;
             }
         }
+
+        /* Стили для уведомлений */
+        .alert-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .alert-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .alert-modal-content {
+            background-color: #252525;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .alert-modal h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+
+        .alert-modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .alert-modal-button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .alert-modal-button.cancel {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .alert-modal-button.save {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .alert-list {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-list li {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-list li div {
+            flex-grow: 1;
+        }
+
+        .alert-list li button {
+            background-color: #F44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .alert-status {
+            font-size: 12px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title-container">
             <h1 class="title">ThinMarket</h1>
-            <div class="time-container">
-                <span class="time-display utc-time" id="utc-time"></span>
-                <span class="time-display" id="moscow-time"></span>
-                <span class="time-display" id="london-time"></span>
-                <span class="time-display" id="newyork-time"></span>
-                <span class="time-display" id="hongkong-time"></span>
-                <span class="time-display" id="shanghai-time"></span>
-            </div>
+        </div>
+        <div class="time-container">
+            <span class="time-display utc-time" id="utc-time"></span>
+            <span class="time-display" id="moscow-time"></span>
+            <span class="time-display" id="london-time"></span>
+            <span class="time-display mobile-hidden" id="newyork-time"></span>
+            <span class="time-display mobile-hidden" id="hongkong-time"></span>
+            <span class="time-display mobile-hidden" id="shanghai-time"></span>
         </div>
     </div>
     
@@ -405,6 +501,19 @@
         </div>
     </div>
 
+    <!-- Модальное окно уведомления -->
+    <div id="notification-modal" class="alert-modal" style="display: none;">
+        <div class="alert-modal-content">
+            <h3>Уведомление о цене</h3>
+            <p id="notification-message"></p>
+            <div class="alert-modal-buttons">
+                <button onclick="document.getElementById('notification-modal').style.display = 'none'" class="alert-modal-button save">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="alerts-button" class="alert-button">Уведомления</button>
+
     <script>
         // Конфигурация
         const config = {
@@ -418,6 +527,9 @@
         let filteredStocks = [];
         let currentPage = 1;
         let currentSort = { column: 'ticker', order: 'asc' };
+
+        // Хранилище уведомлений
+        let priceAlerts = JSON.parse(localStorage.getItem('priceAlerts')) || [];
 
         // Функция для обновления времени
         function updateWorldTime() {
@@ -459,6 +571,188 @@
             document.getElementById('shanghai-time').textContent = 'Шанхай: ' + shTime;
         }
 
+        // Функция для отображения уведомления
+        function showNotification(message) {
+            // Проверяем поддержку уведомлений
+            if ("Notification" in window) {
+                // Проверяем разрешение на показ уведомлений
+                if (Notification.permission === "granted") {
+                    new Notification("ThinMarket - Уведомление", { 
+                        body: message,
+                        icon: 'https://via.placeholder.com/48'
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("ThinMarket - Уведомление", { 
+                                body: message,
+                                icon: 'https://via.placeholder.com/48'
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // Показываем модальное окно в любом случае
+            document.getElementById('notification-message').textContent = message;
+            document.getElementById('notification-modal').style.display = 'flex';
+            
+            // Автоматическое закрытие через 10 секунд
+            setTimeout(() => {
+                document.getElementById('notification-modal').style.display = 'none';
+            }, 10000);
+        }
+
+        // Функция для проверки уведомлений
+        function checkPriceAlerts() {
+            if (!allStocks.length) return;
+            
+            priceAlerts.forEach(alert => {
+                const stock = allStocks.find(s => s.ticker === alert.ticker);
+                if (!stock) return;
+                
+                const currentPrice = stock.price;
+                const shouldNotify = 
+                    (alert.condition === 'above' && currentPrice >= alert.price) ||
+                    (alert.condition === 'below' && currentPrice <= alert.price);
+                
+                if (shouldNotify && !alert.notified) {
+                    const conditionText = alert.condition === 'above' ? 'выше' : 'ниже';
+                    const message = `${alert.ticker} достиг цены ${currentPrice.toFixed(2)} ₽ (${conditionText} ${alert.price.toFixed(2)} ₽)`;
+                    showNotification(message);
+                    
+                    // Помечаем как уведомленное
+                    alert.notified = true;
+                    localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+                }
+                
+                // Сбрасываем флаг уведомления, если цена вышла из диапазона
+                if (!shouldNotify && alert.notified) {
+                    alert.notified = false;
+                    localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+                }
+            });
+        }
+
+        // Функция для добавления уведомления
+        function addPriceAlert(ticker, price, condition) {
+            // Проверяем, нет ли уже такого уведомления
+            const exists = priceAlerts.some(
+                a => a.ticker === ticker && a.price === price && a.condition === condition
+            );
+            
+            if (!exists) {
+                priceAlerts.push({
+                    ticker,
+                    price: parseFloat(price),
+                    condition,
+                    notified: false
+                });
+                localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+                return true;
+            }
+            return false;
+        }
+
+        // Функция для удаления уведомления
+        function removePriceAlert(index) {
+            priceAlerts.splice(index, 1);
+            localStorage.setItem('priceAlerts', JSON.stringify(priceAlerts));
+            showAlertsList(); // Обновляем список
+        }
+
+        // Функция для отображения модального окна добавления уведомления
+        function showAddAlertModal(ticker, currentPrice) {
+            const modal = document.createElement('div');
+            modal.className = 'alert-modal';
+            modal.style.display = 'flex';
+            
+            modal.innerHTML = `
+                <div class="alert-modal-content">
+                    <h3>Добавить уведомление для ${ticker}</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 14px;">Текущая цена: ${currentPrice.toFixed(2)} ₽</label>
+                        <input type="number" id="alert-price" value="${currentPrice.toFixed(2)}" step="0.01" style="width: 100%; padding: 8px; background-color: #333; border: 1px solid #444; color: white; border-radius: 4px; margin-bottom: 10px;">
+                        <select id="alert-condition" style="width: 100%; padding: 8px; background-color: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                            <option value="above">Цена выше</option>
+                            <option value="below">Цена ниже</option>
+                        </select>
+                    </div>
+                    <div class="alert-modal-buttons">
+                        <button id="cancel-alert" class="alert-modal-button cancel">Отмена</button>
+                        <button id="save-alert" class="alert-modal-button save">Сохранить</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            document.getElementById('cancel-alert').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            document.getElementById('save-alert').addEventListener('click', () => {
+                const price = parseFloat(document.getElementById('alert-price').value);
+                const condition = document.getElementById('alert-condition').value;
+                
+                if (isNaN(price)) {
+                    alert('Введите корректную цену');
+                    return;
+                }
+                
+                if (addPriceAlert(ticker, price, condition)) {
+                    alert('Уведомление добавлено');
+                } else {
+                    alert('Такое уведомление уже существует');
+                }
+                
+                document.body.removeChild(modal);
+            });
+        }
+
+        // Функция для отображения списка уведомлений
+        function showAlertsList() {
+            const modal = document.createElement('div');
+            modal.className = 'alert-modal';
+            modal.style.display = 'flex';
+            
+            let alertsHtml = '';
+            if (priceAlerts.length === 0) {
+                alertsHtml = '<p style="text-align: center;">Нет активных уведомлений</p>';
+            } else {
+                alertsHtml = '<ul class="alert-list">';
+                priceAlerts.forEach((alert, index) => {
+                    const conditionText = alert.condition === 'above' ? 'выше' : 'ниже';
+                    alertsHtml += `
+                        <li>
+                            <div>
+                                <strong>${alert.ticker}</strong> - ${conditionText} ${alert.price.toFixed(2)} ₽
+                                <div class="alert-status">Статус: ${alert.notified ? 'Уведомлено' : 'Ожидание'}</div>
+                            </div>
+                            <button onclick="removePriceAlert(${index})">Удалить</button>
+                        </li>
+                    `;
+                });
+                alertsHtml += '</ul>';
+            }
+            
+            modal.innerHTML = `
+                <div class="alert-modal-content">
+                    <h3>Мои уведомления</h3>
+                    ${alertsHtml}
+                    <div class="alert-modal-buttons">
+                        <button id="close-alerts" class="alert-modal-button save">Закрыть</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            document.getElementById('close-alerts').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+        }
+
         // Загрузка данных с MOEX
         async function loadStocksData() {
             try {
@@ -486,6 +780,9 @@
                 
                 // Обновляем тикер
                 updateTicker(allStocks);
+                
+                // Проверяем уведомления
+                checkPriceAlerts();
                 
                 // Применяем фильтры и сортировку
                 applyFilters();
@@ -774,6 +1071,35 @@
             document.getElementById('sort-change').addEventListener('click', () => sortByColumn('sort-change'));
             document.getElementById('sort-volume').addEventListener('click', () => sortByColumn('sort-volume'));
             document.getElementById('sort-turnover').addEventListener('click', () => sortByColumn('sort-turnover'));
+
+            // Обработчик для кнопки уведомлений
+            document.getElementById('alerts-button').addEventListener('click', showAlertsList);
+
+            // Добавляем контекстное меню для добавления уведомлений
+            document.getElementById('stocks-table-body').addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                
+                const row = e.target.closest('tr');
+                if (!row || !row.cells[0] || !row.cells[2]) return;
+                
+                const ticker = row.cells[0].textContent.trim();
+                const price = parseFloat(row.cells[2].textContent);
+                
+                showAddAlertModal(ticker, price);
+            });
+
+            // Добавляем обработчик для клика по ячейке с ценой
+            document.getElementById('stocks-table-body').addEventListener('click', function(e) {
+                if (e.target.classList.contains('number-cell') && e.target.closest('tr').cells[0]) {
+                    const ticker = e.target.closest('tr').cells[0].textContent.trim();
+                    const price = parseFloat(e.target.textContent);
+                    
+                    showAddAlertModal(ticker, price);
+                }
+            });
+
+            // Проверяем уведомления каждые 5 секунд
+            setInterval(checkPriceAlerts, 5000);
         }
 
         // Запуск при загрузке страницы
