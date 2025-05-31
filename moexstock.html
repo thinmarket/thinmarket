@@ -27,7 +27,7 @@
         .header {
             background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow:  ️0 4px 12px rgba(0,0,0,0.3);
             position: relative;
             z-index: 10;
         }
@@ -202,9 +202,33 @@
             font-size: 14px;
         }
         
+        /* Стили для выпадающего списка */
+        .filter-input option {
+            background-color: var(--darker-bg);
+            color: var(--text);
+        }
+        
+        /* Стили для самого select */
+        .filter-input {
+            color: var(--text);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+        }
+        
+        /* Стили для hover состояния option */
+        .filter-input option:hover {
+            background-color: var(--green);
+        }
+        
         .filter-input:focus {
             outline: none;
             border-color: var(--green);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
         
         .pagination {
@@ -323,6 +347,7 @@
                         <th id="sort-ticker" data-sort="ticker" data-order="asc">Тикер <span class="sort-icon">▼</span></th>
                         <th id="sort-name" data-sort="name" data-order="none">Название</th>
                         <th id="sort-price" data-sort="price" data-order="none">Цена (₽)</th>
+                        <th id="sort-step" data-sort="step" data-order="none">Шаг цены (₽)</th>
                         <th id="sort-points" data-sort="points" data-order="desc">Пункты(цена) <span class="sort-icon">▼</span></th>
                         <th id="sort-points-per-hour" data-sort="pointsPerHour" data-order="none">Пунктов/час</th>
                         <th id="sort-turnover" data-sort="turnover" data-order="none">Оборот (₽)</th>
@@ -330,7 +355,7 @@
                 </thead>
                 <tbody id="stocks-table-body">
                     <tr>
-                        <td colspan="6" class="loading pulse">Загрузка данных...</td>
+                        <td colspan="7" class="loading pulse">Загрузка данных...</td>
                     </tr>
                 </tbody>
             </table>
@@ -441,7 +466,7 @@
                 console.error('Ошибка загрузки данных:', error);
                 document.getElementById('stocks-table-body').innerHTML = `
                     <tr>
-                        <td colspan="6" style="color: var(--red); text-align: center;">Ошибка загрузки данных. Попробуйте обновить страницу.</td>
+                        <td colspan="7" style="color: var(--red); text-align: center;">Ошибка загрузки данных. Попробуйте обновить страницу.</td>
                     </tr>
                 `;
             }
@@ -509,7 +534,7 @@
             if (paginatedStocks.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center;">Акции не найдены. Попробуйте изменить параметры фильтра.</td>
+                        <td colspan="7" style="text-align: center;">Акции не найдены. Попробуйте изменить параметры фильтра.</td>
                     </tr>
                 `;
                 updatePagination();
@@ -528,6 +553,7 @@
                         <td class="ticker">${stock.ticker}</td>
                         <td title="${stock.name}">${truncateText(stock.name, 25)}</td>
                         <td>${stock.price.toFixed(2)}</td>
+                        <td>${stock.step.toFixed(4)}</td>
                         <td class="${pointsClass}">
                             ${pointsSign}${stock.points} (${(stock.points * stock.step).toFixed(2)} ₽)
                         </td>
@@ -697,6 +723,7 @@
             document.getElementById('sort-ticker').addEventListener('click', () => sortByColumn('sort-ticker'));
             document.getElementById('sort-name').addEventListener('click', () => sortByColumn('sort-name'));
             document.getElementById('sort-price').addEventListener('click', () => sortByColumn('sort-price'));
+            document.getElementById('sort-step').addEventListener('click', () => sortByColumn('sort-step'));
             document.getElementById('sort-points').addEventListener('click', () => sortByColumn('sort-points'));
             document.getElementById('sort-points-per-hour').addEventListener('click', () => sortByColumn('sort-points-per-hour'));
             document.getElementById('sort-turnover').addEventListener('click', () => sortByColumn('sort-turnover'));
