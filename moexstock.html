@@ -358,7 +358,7 @@
         // Загрузка данных о шагах цены
         async function loadStockSteps() {
             try {
-                const response = await fetch('https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&securities.columns=SECID,STEP');
+                const response = await fetch('https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&securities.columns=SECID,MINSTEP');
                 const data = await response.json();
                 
                 // Сохраняем шаги цены в объект
@@ -399,7 +399,7 @@
                     const ticker = security[0];
                     const name = security[1];
                     const stockData = marketData.find(item => item[0] === ticker);
-                    const step = stockSteps[ticker] || 0.01; // По умолчанию 1 копейка
+                    const step = stockSteps[ticker] || 0.01; // Используем шаг цены из загруженных данных
                     
                     if (!stockData || stockData[1] === null || stockData[2] === null) return null;
                     
@@ -411,7 +411,7 @@
                     const volume = stockData[6];
                     const turnover = stockData[7];
                     
-                    // Рассчитываем изменение в пунктах
+                    // Рассчитываем изменение в пунктах (правильный расчет)
                     const pointsChange = (price - open) / step;
                     
                     // Рассчитываем среднее количество пунктов в час
