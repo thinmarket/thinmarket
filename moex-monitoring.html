@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - Мониторинг акций и фьючерсов MOEX</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+            --futures-color: #FF9800;
+            --shares-color: #2196F3;
+        }
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1.title {
+            font-size: 28px;
+            margin: 0;
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 800;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        .control-panel {
+            max-width: 1200px;
+            margin: 20px auto 10px;
+            padding: 0 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .control-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 8px;
+            flex: 1;
+            min-width: 150px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(3px);
+            position: relative;
+        }
+        .control-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        select, input {
+            width: 100%;
+            padding: 4px;
+            margin: 2px 0;
+            background-color: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        #ticker-input {
+            width: 200px;
+            min-width: 150px;
+            flex: 2;
+        }
+        .add-btn {
+            margin-left: 6px;
+            padding: 3px 10px;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .add-btn:disabled {
+            background: #888;
+            cursor: not-allowed;
+        }
+        .selected-tickers-list {
+            margin: 5px 0 0 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .selected-ticker-item {
+            background: #222;
+            color: #fff;
+            border-radius: 5px;
+            padding: 1px 6px 1px 7px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+        .selected-ticker-item.shares {
+            border-left: 3px solid var(--shares-color);
+        }
+        .selected-ticker-item.futures {
+            border-left: 3px solid var(--futures-color);
+        }
+        .remove-btn {
+            margin-left: 4px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 1px 5px;
+            font-weight: bold;
+        }
+        .stats-container {
+            max-width: 1200px;
+            margin: 8px auto;
+            padding: 4px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.08);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 7px;
+            min-height: 60px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 7px;
+            padding: 6px 5px 5px 7px;
+            transition: all 0.3s;
+            min-width: 0;
+            min-height: 60px;
+            max-width: 250px;
+            box-sizing: border-box;
+            font-size: 13px;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .stat-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .stat-card.shares {
+            border-left: 3px solid var(--shares-color);
+        }
+        .stat-card.futures {
+            border-left: 3px solid var(--futures-color);
+        }
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .stat-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 1px;
+            font-weight: bold;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1px;
+        }
+        .stat-label {
+            color: var(--text-secondary);
+        }
+        .stat-value {
+            font-weight: bold;
+        }
+        .positive { color: var(--green);}
+        .negative { color: var(--red);}
+        .loading {
+            text-align: center;
+            padding: 8px 0;
+            font-size: 11px;
+            color: var(--text-secondary);
+            grid-column: 1 / -1;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #333;
+            border-radius: 4px;
+            margin: 5px 0;
+            grid-column: 1 / -1;
+            transition: opacity 0.3s ease;
+        }
+        .progress-bar {
+            height: 6px;
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 2px;
+        }
+        .pulse { animation: pulse 1.5s infinite;}
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        /* Стили для автодополнения */
+        .autocomplete {
+            position: relative;
+            display: inline-block;
+            width: 200px;
+        }
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #444;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .autocomplete-items div {
+            padding: 6px;
+            cursor: pointer;
+            background-color: #333;
+            border-bottom: 1px solid #444;
+            color: white;
+            font-size: 12px;
+        }
+        .autocomplete-items div:hover {
+            background-color: #444;
+        }
+        .autocomplete-active {
+            background-color: var(--green) !important;
+            color: white;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, #2E2E2E 0%, #1E1E1E 70%);
+            z-index: -1;
+        }
+        @media (max-width: 1200px) {
+            .stats-container { grid-template-columns: repeat(3, 1fr);}
+        }
+        @media (max-width: 900px) {
+            .stats-container { grid-template-columns: repeat(2, 1fr);}
+        }
+        @media (max-width: 600px) {
+            .stats-container { grid-template-columns: 1fr;}
+            .stat-card { min-height: 50px; }
+            #ticker-input {
+                width: 120px;
+                min-width: 100px;
+            }
+        }
+        @media (max-width: 480px) {
+            .control-card { min-width: 100%;}
+            h1.title { font-size: 18px;}
+            #ticker-input {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="title-container">
+                <h1 class="title">ThinMarket - Мониторинг акций и фьючерсов</h1>
+            </div>
+            <a href="index.html" class="back-button">← На главную</a>
+        </div>
+    </div>
+    <div class="control-panel" id="control-panel">
+        <div class="control-card">
+            <div class="control-title">Добавьте до 20 инструментов</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <select id="market-type">
+                    <option value="shares">Акции</option>
+                    <option value="futures">Фьючерсы</option>
+                </select>
+                <div class="autocomplete">
+                    <input type="text" id="ticker-input" placeholder="Введите тикер" autocomplete="off">
+                </div>
+                <button class="add-btn" id="add-ticker-btn">+</button>
+            </div>
+            <div style="margin-top:5px;display:flex;gap:6px;align-items:center;">
+                <select id="instrument-selector" style="flex:1;">
+                    <option value="">Или выберите из списка...</option>
+                </select>
+            </div>
+            <ul class="selected-tickers-list" id="selected-tickers-list"></ul>
+            <div id="ticker-limit-warning" style="color:var(--red);font-size:11px;display:none;">Максимум 20 инструментов!</div>
+        </div>
+        <div class="control-card">
+            <div class="control-title">Дата</div>
+            <select id="date-selector">
+                <option value="today">Сегодня</option>
+            </select>
+        </div>
+    </div>
+    <div class="stats-container" id="stats-container">
+        <div class="loading pulse">Добавьте инструменты для мониторинга...</div>
+    </div>
+    <script>
+        const config = {
+            updateInterval: 60000, // 60 секунд
+            maxTickers: 20,
+            maxTradesToLoad: 1000000
+        };
+        let updateTimer = null;
+        const TICKERS_KEY = 'selected_instruments';
+        let allInstruments = {
+            shares: [],
+            futures: []
+        };
+        let cachedTrades = {}; // Кэш для хранения загруженных данных
+
+        // Функция автодополнения
+        function autocomplete(inp, arr) {
+            let currentFocus;
+            
+            inp.addEventListener("input", function(e) {
+                const val = this.value.toUpperCase();
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                
+                const container = document.createElement("DIV");
+                container.setAttribute("id", this.id + "autocomplete-list");
+                container.setAttribute("class", "autocomplete-items");
+                this.parentNode.appendChild(container);
+                
+                const marketType = document.getElementById('market-type').value;
+                const instruments = arr[marketType] || [];
+                
+                let count = 0;
+                for (let i = 0; i < instruments.length; i++) {
+                    if (instruments[i].ticker.includes(val) || 
+                        instruments[i].name.toUpperCase().includes(val)) {
+                        count++;
+                        if (count > 10) break; // Ограничиваем количество подсказок
+                        
+                        const item = document.createElement("DIV");
+                        item.innerHTML = `<strong>${instruments[i].ticker}</strong> - ${instruments[i].name}`;
+                        item.innerHTML += `<input type='hidden' value='${instruments[i].ticker}'>`;
+                        
+                        item.addEventListener("click", function(e) {
+                            inp.value = this.getElementsByTagName("input")[0].value;
+                            closeAllLists();
+                        });
+                        container.appendChild(item);
+                    }
+                }
+            });
+            
+            inp.addEventListener("keydown", function(e) {
+                let x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) { // Стрелка вниз
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.keyCode == 38) { // Стрелка вверх
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.keyCode == 13) { // Enter
+                    e.preventDefault();
+                    if (currentFocus > -1 && x) {
+                        x[currentFocus].click();
+                    } else {
+                        addInstrument();
+                    }
+                }
+            });
+            
+            function addActive(x) {
+                if (!x) return false;
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            
+            function removeActive(x) {
+                for (let i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            
+            function closeAllLists(elmnt) {
+                const x = document.getElementsByClassName("autocomplete-items");
+                for (let i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            
+            document.addEventListener("click", function(e) {
+                closeAllLists(e.target);
+            });
+        }
+
+        // Загрузка списка инструментов с MOEX
+        async function loadInstrumentsList() {
+            try {
+                // Загрузка акций (только основная площадка)
+                const sharesResponse = await fetch('https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME');
+                const sharesData = await sharesResponse.json();
+                
+                allInstruments.shares = sharesData.securities.data.map(item => ({
+                    ticker: item[0],
+                    name: item[1],
+                    type: 'shares'
+                })).sort((a, b) => a.ticker.localeCompare(b.ticker));
+                
+                // Загрузка фьючерсов
+                const futuresResponse = await fetch('https://iss.moex.com/iss/engines/futures/markets/forts/securities.json?iss.meta=off&securities.columns=SECID,SECNAME,MATDATE');
+                const futuresData = await futuresResponse.json();
+                
+                allInstruments.futures = futuresData.securities.data.map(item => ({
+                    ticker: item[0],
+                    name: item[1],
+                    expiration: item[2],
+                    type: 'futures'
+                })).sort((a, b) => a.ticker.localeCompare(b.ticker));
+                
+                // Инициализация автодополнения после загрузки данных
+                autocomplete(document.getElementById("ticker-input"), allInstruments);
+                
+                updateInstrumentSelector();
+                document.getElementById('add-ticker-btn').disabled = false;
+            } catch (error) {
+                console.error('Ошибка загрузки списка инструментов:', error);
+                document.getElementById('instrument-selector').innerHTML = '<option value="">Ошибка загрузки списка</option>';
+                
+                // Fallback список популярных инструментов
+                allInstruments = {
+                    shares: [
+                        { ticker: "SBER", name: "Сбербанк", type: 'shares' },
+                        { ticker: "GAZP", name: "Газпром", type: 'shares' },
+                        { ticker: "LKOH", name: "Лукойл", type: 'shares' },
+                        { ticker: "VTBR", name: "ВТБ", type: 'shares' },
+                        { ticker: "ROSN", name: "Роснефть", type: 'shares' }
+                    ],
+                    futures: [
+                        { ticker: "SiM5", name: "Фьючерс USD/RUB", expiration: "2025-05-15", type: 'futures' },
+                        { ticker: "BRM5", name: "Фьючерс Brent", expiration: "2025-05-15", type: 'futures' },
+                        { ticker: "GZM5", name: "Фьючерс на золото", expiration: "2025-05-15", type: 'futures' }
+                    ]
+                };
+                
+                // Инициализация автодополнения с fallback данными
+                autocomplete(document.getElementById("ticker-input"), allInstruments);
+                
+                updateInstrumentSelector();
+                document.getElementById('add-ticker-btn').disabled = false;
+            }
+        }
+
+        // Обновление выпадающего списка инструментов
+        function updateInstrumentSelector() {
+            const marketType = document.getElementById('market-type').value;
+            const selector = document.getElementById('instrument-selector');
+            
+            // Сохраняем текущее выбранное значение
+            const currentValue = selector.value;
+            
+            // Очищаем и добавляем заголовок
+            selector.innerHTML = '<option value="">Или выберите из списка...</option>';
+            
+            // Добавляем инструменты соответствующего типа
+            const instruments = allInstruments[marketType] || [];
+            
+            instruments.forEach(instrument => {
+                const option = document.createElement('option');
+                option.value = instrument.ticker;
+                let text = instrument.name;
+                if (instrument.type === 'futures' && instrument.expiration) {
+                    text += ` (${instrument.expiration})`;
+                }
+                text += ` (${instrument.ticker})`;
+                option.textContent = text;
+                option.dataset.type = instrument.type;
+                selector.appendChild(option);
+            });
+            
+            // Восстанавливаем выбранное значение, если оно есть в новом списке
+            if (currentValue && selector.querySelector(`option[value="${currentValue}"]`)) {
+                selector.value = currentValue;
+            }
+        }
+
+        function saveInstrumentsToStorage(instruments) {
+            localStorage.setItem(TICKERS_KEY, JSON.stringify(instruments));
+        }
+        
+        function loadInstrumentsFromStorage() {
+            try {
+                return JSON.parse(localStorage.getItem(TICKERS_KEY)) || [];
+            } catch {
+                return [];
+            }
+        }
+        
+        function renderSelectedInstruments() {
+            const instruments = getSelectedInstruments();
+            const list = document.getElementById('selected-tickers-list');
+            list.innerHTML = '';
+            
+            instruments.forEach(instrument => {
+                const li = document.createElement('li');
+                li.className = `selected-ticker-item ${instrument.type}`;
+                li.textContent = `${instrument.ticker}`;
+                
+                const btn = document.createElement('button');
+                btn.className = 'remove-btn';
+                btn.textContent = 'X';
+                btn.onclick = () => {
+                    removeInstrument(instrument.ticker);
+                };
+                li.appendChild(btn);
+                list.appendChild(li);
+            });
+            
+            document.getElementById('ticker-limit-warning').style.display = 
+                instruments.length >= config.maxTickers ? '' : 'none';
+            document.getElementById('add-ticker-btn').disabled = 
+                instruments.length >= config.maxTickers;
+        }
+        
+        function getSelectedInstruments() {
+            return loadInstrumentsFromStorage();
+        }
+        
+        function findInstrumentByTicker(ticker) {
+            const marketType = document.getElementById('market-type').value;
+            const instruments = allInstruments[marketType] || [];
+            return instruments.find(i => i.ticker === ticker);
+        }
+        
+        function addInstrument() {
+            const tickerInput = document.getElementById('ticker-input');
+            const selector = document.getElementById('instrument-selector');
+            
+            let ticker = tickerInput.value.trim().toUpperCase();
+            let instrument;
+            
+            // Если введен тикер вручную
+            if (ticker) {
+                instrument = findInstrumentByTicker(ticker);
+                if (!instrument) {
+                    // Если инструмент не найден, создаем временный
+                    instrument = {
+                        ticker: ticker,
+                        name: ticker,
+                        type: document.getElementById('market-type').value
+                    };
+                }
+                tickerInput.value = ''; // Очищаем поле ввода
+            } 
+            // Если выбран из списка
+            else if (selector.value) {
+                ticker = selector.value;
+                instrument = findInstrumentByTicker(ticker);
+                selector.value = ''; // Сбрасываем выбор
+            }
+            
+            if (!ticker || !instrument) return;
+            
+            let instruments = getSelectedInstruments();
+            
+            // Проверяем, не добавлен ли уже этот инструмент
+            if (instruments.some(i => i.ticker === ticker)) return;
+            
+            if (instruments.length < config.maxTickers) {
+                instruments.push(instrument);
+                saveInstrumentsToStorage(instruments);
+                renderSelectedInstruments();
+                loadAndAnalyzeAll();
+            }
+        }
+        
+        function removeInstrument(ticker) {
+            let instruments = getSelectedInstruments();
+            instruments = instruments.filter(i => i.ticker !== ticker);
+            saveInstrumentsToStorage(instruments);
+            renderSelectedInstruments();
+            loadAndAnalyzeAll();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем список инструментов при загрузке страницы
+            loadInstrumentsList();
+            
+            // Обработчики событий
+            document.getElementById('add-ticker-btn').addEventListener('click', addInstrument);
+            document.getElementById('market-type').addEventListener('change', updateInstrumentSelector);
+            document.getElementById('date-selector').addEventListener('change', loadAndAnalyzeAll);
+            
+            // Добавляем обработчик для ввода тикера
+            document.getElementById('ticker-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addInstrument();
+                }
+            });
+            
+            renderSelectedInstruments();
+            loadAndAnalyzeAll();
+        });
+
+        async function loadAndAnalyzeAll() {
+            clearTimeout(updateTimer);
+            const instruments = getSelectedInstruments();
+            const dateRange = document.getElementById('date-selector').value;
+            const container = document.getElementById('stats-container');
+            
+            if (instruments.length === 0) {
+                container.innerHTML = `<div class="loading pulse">Добавьте инструменты для мониторинга...</div>`;
+                return;
+            }
+            
+            // Очищаем контейнер и добавляем прогресс-бар
+            container.innerHTML = `
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                    <div class="progress-text" id="progress-text">Обновление 1 раз в мин., данные с задержкой 15 мин....</div>
+                </div>
+            `;
+            
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            // Создаем все карточки сразу
+            instruments.forEach(instrument => {
+                const cardId = `stat-card-${instrument.ticker}`;
+                container.innerHTML += `
+                    <div class="stat-card ${instrument.type}" id="${cardId}">
+                        <div class="loading pulse">Загрузка ${instrument.ticker}...</div>
+                    </div>
+                `;
+            });
+            
+            // Обновляем прогресс
+            progressText.textContent = `Загрузка данных: 0/${instruments.length}`;
+            progressBar.style.width = '0%';
+            
+            let loadedCount = 0;
+            const updateProgress = () => {
+                loadedCount++;
+                const percent = Math.round((loadedCount / instruments.length) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressText.textContent = `Загрузка данных: ${loadedCount}/${instruments.length}`;
+                
+                if (loadedCount === instruments.length) {
+                    // Удаляем прогресс-бар после завершения
+                    setTimeout(() => {
+                        const progressContainer = progressBar.parentElement;
+                        progressContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            if (progressContainer.parentNode) {
+                                progressContainer.parentNode.removeChild(progressContainer);
+                            }
+                        }, 300);
+                    }, 100);
+                }
+            };
+            
+            // Загружаем данные параллельно с ограничением
+            const BATCH_SIZE = 3;
+            for (let i = 0; i < instruments.length; i += BATCH_SIZE) {
+                const batch = instruments.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(async instrument => {
+                    const cardId = `stat-card-${instrument.ticker}`;
+                    try {
+                        let trades;
+                        if (instrument.type === 'shares') {
+                            trades = await fetchAllTrades(instrument.ticker, 'stock', 'shares', 'TQBR', dateRange);
+                        } else {
+                            trades = await fetchAllTrades(instrument.ticker, 'futures', 'forts', '', dateRange);
+                        }
+                        const stats = analyzeTrades(trades);
+                        updateStatsDisplay(stats, dateRange, instrument, cardId);
+                    } catch (error) {
+                        document.getElementById(cardId).innerHTML = `
+                            <div class="loading" style="color: var(--red);">
+                                Ошибка загрузки ${instrument.ticker}: ${error.message}
+                            </div>
+                        `;
+                    }
+                    
+                    // Обновляем прогресс после загрузки каждого инструмента
+                    updateProgress();
+                }));
+            }
+            
+            if (dateRange === 'today') {
+                updateTimer = setTimeout(loadAndAnalyzeAll, config.updateInterval);
+            }
+        }
+        
+        async function fetchAllTrades(ticker, engine, market, board, dateRange) {
+            const cacheKey = `${ticker}_${dateRange}`;
+            
+            // Проверяем кэш (кроме данных за сегодня)
+            if (cachedTrades[cacheKey] && dateRange !== 'today') {
+                return cachedTrades[cacheKey];
+            }
+            
+            let start = 0;
+            const trades = [];
+            let hasMore = true;
+            let fromDate = '';
+            
+            const today = new Date();
+            if (dateRange === 'yesterday') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                fromDate = yesterday.toISOString().split('T')[0];
+            } else if (dateRange === 'week') {
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                fromDate = weekAgo.toISOString().split('T')[0];
+            }
+            
+            while (hasMore && trades.length < config.maxTradesToLoad) {
+                let url;
+                if (engine === 'stock') {
+                    url = `https://iss.moex.com/iss/engines/${engine}/markets/${market}/boards/${board}/securities/${ticker}/trades.json?start=${start}`;
+                } else {
+                    url = `https://iss.moex.com/iss/engines/${engine}/markets/${market}/securities/${ticker}/trades.json?start=${start}`;
+                }
+                
+                if (fromDate) url += `&from=${fromDate}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (!data.trades || !data.trades.data || data.trades.data.length === 0) {
+                    hasMore = false;
+                    break;
+                }
+                
+                const columns = data.trades.columns;
+                const newTrades = data.trades.data.map(trade => {
+                    const tradeObj = {};
+                    columns.forEach((col, index) => {
+                        tradeObj[col] = trade[index];
+                    });
+                    return tradeObj;
+                });
+                
+                trades.push(...newTrades);
+                start += newTrades.length;
+                if (newTrades.length < 500) hasMore = false;
+            }
+            
+            // Кэшируем результат (кроме данных за сегодня)
+            if (dateRange !== 'today') {
+                cachedTrades[cacheKey] = trades;
+            }
+            
+            return trades;
+        }
+        
+        function analyzeTrades(trades) {
+            const stats = {
+                totalTrades: trades.length,
+                buyTrades: 0,
+                sellTrades: 0,
+                buyVolume: 0,
+                sellVolume: 0,
+                buyQuantity: 0,
+                sellQuantity: 0,
+                avgBuyPrice: 0,
+                avgSellPrice: 0,
+                firstTradeTime: null,
+                lastTradeTime: null
+            };
+            
+            if (trades.length === 0) return stats;
+            
+            let totalBuyPrice = 0;
+            let totalSellPrice = 0;
+            
+            // Сортируем сделки по времени
+            trades.sort((a, b) => {
+                const timeA = a.TRADETIME || '';
+                const timeB = b.TRADETIME || '';
+                return timeA.localeCompare(timeB);
+            });
+            
+            stats.firstTradeTime = trades[0].TRADETIME || '';
+            stats.lastTradeTime = trades[trades.length - 1].TRADETIME || '';
+            
+            // Анализируем каждую сделку
+            trades.forEach(trade => {
+                const quantity = trade.QUANTITY || 0;
+                const price = trade.PRICE || 0;
+                const volume = quantity * price;
+                
+                if (trade.BUYSELL === 'B') {
+                    stats.buyTrades++;
+                    stats.buyQuantity += quantity;
+                    stats.buyVolume += volume;
+                    totalBuyPrice += price;
+                } else {
+                    stats.sellTrades++;
+                    stats.sellQuantity += quantity;
+                    stats.sellVolume += volume;
+                    totalSellPrice += price;
+                }
+            });
+            
+            if (stats.buyTrades > 0) stats.avgBuyPrice = totalBuyPrice / stats.buyTrades;
+            if (stats.sellTrades > 0) stats.avgSellPrice = totalSellPrice / stats.sellTrades;
+            
+            return stats;
+        }
+        
+        function updateStatsDisplay(stats, dateRange, instrument, cardId) {
+            const deltaVolume = stats.buyVolume - stats.sellVolume;
+            const deltaQuantity = stats.buyQuantity - stats.sellQuantity;
+            
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '--:--:--';
+                return timeStr.length > 8 ? timeStr.substr(0, 8) : timeStr;
+            };
+            
+            const expirationInfo = instrument.type === 'futures' && instrument.expiration ? 
+                `<div class="stat-row"><span class="stat-label">Экспирация:</span> <span class="stat-value">${instrument.expiration}</span></div>` : '';
+            
+            document.getElementById(cardId).innerHTML = `
+                <div class="stat-title" style="font-size:12px;margin-bottom:2px;">
+                    ${instrument.ticker} <span style="color:${instrument.type === 'shares' ? 'var(--shares-color)' : 'var(--futures-color)'}">${instrument.type === 'shares' ? 'АКЦИЯ' : 'ФЬЮЧЕРС'}</span>
+                </div>
+                ${expirationInfo}
+                <div class="stat-row"><span class="stat-label">Всего:</span> <span class="stat-value">${stats.totalTrades}</span></div>
+                <div class="stat-row"><span class="stat-label">Покупок:</span> <span class="stat-value">${stats.buyTrades}</span> <span class="stat-label">Продаж:</span> <span class="stat-value">${stats.sellTrades}</span></div>
+                <div class="stat-row"><span class="stat-label">Покупки:</span> <span class="stat-value">${formatCurrency(stats.buyVolume)}</span></div>
+                <div class="stat-row"><span class="stat-label">Продажи:</span> <span class="stat-value">${formatCurrency(stats.sellVolume)}</span></div>
+                <div class="stat-row"><span class="stat-label">Дельта:</span> <span class="stat-value ${deltaVolume >= 0 ? 'positive' : 'negative'}">${formatCurrency(Math.abs(deltaVolume))}</span></div>
+                <div class="stat-row"><span class="stat-label">Δ шт:</span> <span class="stat-value ${deltaQuantity >= 0 ? 'positive' : 'negative'}">${deltaQuantity >= 0 ? '+' : '-'}${Math.abs(deltaQuantity).toLocaleString()}</span></div>
+                <div class="stat-row"><span class="stat-label">Ср.цена B/S:</span> <span class="stat-value">${stats.avgBuyPrice.toFixed(2)} / ${stats.avgSellPrice.toFixed(2)} ₽</span></div>
+                <div class="stat-row"><span class="stat-label">Период:</span> <span class="stat-value">${formatTime(stats.firstTradeTime)}-${formatTime(stats.lastTradeTime)}</span></div>
+                <div class="stat-row"><span class="stat-label">Соотношение:</span> <span class="stat-value">${stats.totalTrades > 0 ? (stats.buyTrades / stats.totalTrades * 100).toFixed(1) : 0}% / ${stats.totalTrades > 0 ? (stats.sellTrades / stats.totalTrades * 100).toFixed(1) : 0}%</span></div>
+            `;
+            
+            // Добавляем класс для плавного появления
+            document.getElementById(cardId).classList.add('loaded');
+        }
+        
+        function formatCurrency(amount) {
+            if (!amount) return '0 ₽';
+            if (amount >= 1000000000) return (amount / 1000000000).toFixed(2) + ' млрд ₽';
+            if (amount >= 1000000) return (amount / 1000000).toFixed(2) + ' млн ₽';
+            if (amount >= 1000) return (amount / 1000).toFixed(1) + ' тыс ₽';
+            return amount.toFixed(0) + ' ₽';
+        }
+    </script>
+</body>
+</html>
