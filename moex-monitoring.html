@@ -194,6 +194,11 @@
             opacity: 0;
             transform: translateY(10px);
             transition: opacity 0.3s ease, transform 0.3s ease;
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
         .stat-card.loaded {
             opacity: 1;
@@ -204,10 +209,6 @@
         }
         .stat-card.futures {
             border-left: 3px solid var(--futures-color);
-        }
-        .stat-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
         .stat-title {
             font-size: 11px;
@@ -262,6 +263,61 @@
             50% { opacity: 1; }
             100% { opacity: 0.6; }
         }
+        /* Стили для модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .decision-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--text);
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        .decision-text {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .decision-strong {
+            font-weight: bold;
+            color: var(--green);
+        }
+        .decision-warning {
+            font-weight: bold;
+            color: var(--red);
+        }
+        .decision-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
         /* Стили для автодополнения */
         .autocomplete {
             position: relative;
@@ -279,6 +335,7 @@
             right: 0;
             max-height: 200px;
             overflow-y: auto;
+            background-color: #333;
         }
         .autocomplete-items div {
             padding: 6px;
@@ -295,16 +352,7 @@
             background-color: var(--green) !important;
             color: white;
         }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 30%, #2E2E2E 0%, #1E1E1E 70%);
-            z-index: -1;
-        }
+        /* Адаптивные стили */
         @media (max-width: 1200px) {
             .stats-container { grid-template-columns: repeat(3, 1fr);}
         }
@@ -318,11 +366,17 @@
                 width: 120px;
                 min-width: 100px;
             }
+            .autocomplete {
+                width: 120px;
+            }
         }
         @media (max-width: 480px) {
             .control-card { min-width: 100%;}
             h1.title { font-size: 18px;}
             #ticker-input {
+                width: 100px;
+            }
+            .autocomplete {
                 width: 100px;
             }
         }
@@ -362,33 +416,45 @@
             <div class="control-title">Дата</div>
             <select id="date-selector">
                 <option value="today">Сегодня</option>
+                <option value="yesterday">Вчера</option>
+                <option value="week">Неделя</option>
             </select>
         </div>
     </div>
     <div class="stats-container" id="stats-container">
         <div class="loading pulse">Добавьте инструменты для мониторинга...</div>
     </div>
+
+    <!-- Модальное окно для торговых рекомендаций -->
+    <div id="decision-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="decision-content"></div>
+        </div>
+    </div>
+
     <script>
         const config = {
-            updateInterval: 60000, // 60 секунд
+            updateInterval: 60000,
             maxTickers: 20,
             maxTradesToLoad: 1000000
         };
         let updateTimer = null;
+        let currentFocus = -1;
         const TICKERS_KEY = 'selected_instruments';
         let allInstruments = {
             shares: [],
             futures: []
         };
-        let cachedTrades = {}; // Кэш для хранения загруженных данных
+        let cachedTrades = {};
 
-        // Функция автодополнения
-        function autocomplete(inp, arr) {
-            let currentFocus;
+        // Функции автодополнения
+        function initAutocomplete() {
+            const input = document.getElementById("ticker-input");
             
-            inp.addEventListener("input", function(e) {
+            input.addEventListener("input", function(e) {
                 const val = this.value.toUpperCase();
-                closeAllLists();
+                closeAllAutocompleteLists();
                 if (!val) { return false; }
                 currentFocus = -1;
                 
@@ -398,43 +464,41 @@
                 this.parentNode.appendChild(container);
                 
                 const marketType = document.getElementById('market-type').value;
-                const instruments = arr[marketType] || [];
+                const instruments = allInstruments[marketType] || [];
                 
                 let count = 0;
                 for (let i = 0; i < instruments.length; i++) {
                     if (instruments[i].ticker.includes(val) || 
                         instruments[i].name.toUpperCase().includes(val)) {
                         count++;
-                        if (count > 10) break; // Ограничиваем количество подсказок
+                        if (count > 10) break;
                         
                         const item = document.createElement("DIV");
                         item.innerHTML = `<strong>${instruments[i].ticker}</strong> - ${instruments[i].name}`;
                         item.innerHTML += `<input type='hidden' value='${instruments[i].ticker}'>`;
                         
                         item.addEventListener("click", function(e) {
-                            inp.value = this.getElementsByTagName("input")[0].value;
-                            closeAllLists();
+                            input.value = this.getElementsByTagName("input")[0].value;
+                            closeAllAutocompleteLists();
                         });
                         container.appendChild(item);
                     }
                 }
             });
             
-            inp.addEventListener("keydown", function(e) {
+            input.addEventListener("keydown", function(e) {
                 let x = document.getElementById(this.id + "autocomplete-list");
                 if (x) x = x.getElementsByTagName("div");
-                if (e.keyCode == 40) { // Стрелка вниз
+                if (e.keyCode == 40) {
                     currentFocus++;
                     addActive(x);
-                } else if (e.keyCode == 38) { // Стрелка вверх
+                } else if (e.keyCode == 38) {
                     currentFocus--;
                     addActive(x);
-                } else if (e.keyCode == 13) { // Enter
+                } else if (e.keyCode == 13) {
                     e.preventDefault();
                     if (currentFocus > -1 && x) {
                         x[currentFocus].click();
-                    } else {
-                        addInstrument();
                     }
                 }
             });
@@ -453,24 +517,24 @@
                 }
             }
             
-            function closeAllLists(elmnt) {
+            function closeAllAutocompleteLists(elmnt) {
                 const x = document.getElementsByClassName("autocomplete-items");
                 for (let i = 0; i < x.length; i++) {
-                    if (elmnt != x[i] && elmnt != inp) {
+                    if (elmnt != x[i] && elmnt != input) {
                         x[i].parentNode.removeChild(x[i]);
                     }
                 }
             }
             
             document.addEventListener("click", function(e) {
-                closeAllLists(e.target);
+                closeAllAutocompleteLists(e.target);
             });
         }
 
-        // Загрузка списка инструментов с MOEX
+        // Загрузка списка инструментов
         async function loadInstrumentsList() {
             try {
-                // Загрузка акций (только основная площадка)
+                // Загрузка акций
                 const sharesResponse = await fetch('https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME');
                 const sharesData = await sharesResponse.json();
                 
@@ -491,36 +555,28 @@
                     type: 'futures'
                 })).sort((a, b) => a.ticker.localeCompare(b.ticker));
                 
-                // Инициализация автодополнения после загрузки данных
-                autocomplete(document.getElementById("ticker-input"), allInstruments);
-                
                 updateInstrumentSelector();
                 document.getElementById('add-ticker-btn').disabled = false;
+                initAutocomplete();
             } catch (error) {
                 console.error('Ошибка загрузки списка инструментов:', error);
                 document.getElementById('instrument-selector').innerHTML = '<option value="">Ошибка загрузки списка</option>';
                 
-                // Fallback список популярных инструментов
+                // Fallback список
                 allInstruments = {
                     shares: [
                         { ticker: "SBER", name: "Сбербанк", type: 'shares' },
                         { ticker: "GAZP", name: "Газпром", type: 'shares' },
-                        { ticker: "LKOH", name: "Лукойл", type: 'shares' },
-                        { ticker: "VTBR", name: "ВТБ", type: 'shares' },
-                        { ticker: "ROSN", name: "Роснефть", type: 'shares' }
+                        { ticker: "LKOH", name: "Лукойл", type: 'shares' }
                     ],
                     futures: [
-                        { ticker: "SiM5", name: "Фьючерс USD/RUB", expiration: "2025-05-15", type: 'futures' },
-                        { ticker: "BRM5", name: "Фьючерс Brent", expiration: "2025-05-15", type: 'futures' },
-                        { ticker: "GZM5", name: "Фьючерс на золото", expiration: "2025-05-15", type: 'futures' }
+                        { ticker: "SiM5", name: "Фьючерс USD/RUB", type: 'futures' }
                     ]
                 };
                 
-                // Инициализация автодополнения с fallback данными
-                autocomplete(document.getElementById("ticker-input"), allInstruments);
-                
                 updateInstrumentSelector();
                 document.getElementById('add-ticker-btn').disabled = false;
+                initAutocomplete();
             }
         }
 
@@ -528,16 +584,11 @@
         function updateInstrumentSelector() {
             const marketType = document.getElementById('market-type').value;
             const selector = document.getElementById('instrument-selector');
-            
-            // Сохраняем текущее выбранное значение
             const currentValue = selector.value;
             
-            // Очищаем и добавляем заголовок
             selector.innerHTML = '<option value="">Или выберите из списка...</option>';
             
-            // Добавляем инструменты соответствующего типа
             const instruments = allInstruments[marketType] || [];
-            
             instruments.forEach(instrument => {
                 const option = document.createElement('option');
                 option.value = instrument.ticker;
@@ -551,7 +602,6 @@
                 selector.appendChild(option);
             });
             
-            // Восстанавливаем выбранное значение, если оно есть в новом списке
             if (currentValue && selector.querySelector(`option[value="${currentValue}"]`)) {
                 selector.value = currentValue;
             }
@@ -582,9 +632,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'remove-btn';
                 btn.textContent = 'X';
-                btn.onclick = () => {
-                    removeInstrument(instrument.ticker);
-                };
+                btn.onclick = () => removeInstrument(instrument.ticker);
                 li.appendChild(btn);
                 list.appendChild(li);
             });
@@ -612,31 +660,25 @@
             let ticker = tickerInput.value.trim().toUpperCase();
             let instrument;
             
-            // Если введен тикер вручную
             if (ticker) {
                 instrument = findInstrumentByTicker(ticker);
                 if (!instrument) {
-                    // Если инструмент не найден, создаем временный
                     instrument = {
                         ticker: ticker,
                         name: ticker,
                         type: document.getElementById('market-type').value
                     };
                 }
-                tickerInput.value = ''; // Очищаем поле ввода
-            } 
-            // Если выбран из списка
-            else if (selector.value) {
+                tickerInput.value = '';
+            } else if (selector.value) {
                 ticker = selector.value;
                 instrument = findInstrumentByTicker(ticker);
-                selector.value = ''; // Сбрасываем выбор
+                selector.value = '';
             }
             
             if (!ticker || !instrument) return;
             
             let instruments = getSelectedInstruments();
-            
-            // Проверяем, не добавлен ли уже этот инструмент
             if (instruments.some(i => i.ticker === ticker)) return;
             
             if (instruments.length < config.maxTickers) {
@@ -655,26 +697,6 @@
             loadAndAnalyzeAll();
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Загружаем список инструментов при загрузке страницы
-            loadInstrumentsList();
-            
-            // Обработчики событий
-            document.getElementById('add-ticker-btn').addEventListener('click', addInstrument);
-            document.getElementById('market-type').addEventListener('change', updateInstrumentSelector);
-            document.getElementById('date-selector').addEventListener('change', loadAndAnalyzeAll);
-            
-            // Добавляем обработчик для ввода тикера
-            document.getElementById('ticker-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    addInstrument();
-                }
-            });
-            
-            renderSelectedInstruments();
-            loadAndAnalyzeAll();
-        });
-
         async function loadAndAnalyzeAll() {
             clearTimeout(updateTimer);
             const instruments = getSelectedInstruments();
@@ -686,7 +708,6 @@
                 return;
             }
             
-            // Очищаем контейнер и добавляем прогресс-бар
             container.innerHTML = `
                 <div class="progress-container">
                     <div class="progress-bar" id="progress-bar"></div>
@@ -697,17 +718,14 @@
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             
-            // Создаем все карточки сразу
             instruments.forEach(instrument => {
-                const cardId = `stat-card-${instrument.ticker}`;
-                container.innerHTML += `
-                    <div class="stat-card ${instrument.type}" id="${cardId}">
-                        <div class="loading pulse">Загрузка ${instrument.ticker}...</div>
-                    </div>
-                `;
+                const card = document.createElement('div');
+                card.className = `stat-card ${instrument.type}`;
+                card.id = `stat-card-${instrument.ticker}`;
+                card.innerHTML = `<div class="loading pulse">Загрузка ${instrument.ticker}...</div>`;
+                container.appendChild(card);
             });
             
-            // Обновляем прогресс
             progressText.textContent = `Загрузка данных: 0/${instruments.length}`;
             progressBar.style.width = '0%';
             
@@ -719,7 +737,6 @@
                 progressText.textContent = `Загрузка данных: ${loadedCount}/${instruments.length}`;
                 
                 if (loadedCount === instruments.length) {
-                    // Удаляем прогресс-бар после завершения
                     setTimeout(() => {
                         const progressContainer = progressBar.parentElement;
                         progressContainer.style.opacity = '0';
@@ -732,7 +749,6 @@
                 }
             };
             
-            // Загружаем данные параллельно с ограничением
             const BATCH_SIZE = 3;
             for (let i = 0; i < instruments.length; i += BATCH_SIZE) {
                 const batch = instruments.slice(i, i + BATCH_SIZE);
@@ -754,8 +770,6 @@
                             </div>
                         `;
                     }
-                    
-                    // Обновляем прогресс после загрузки каждого инструмента
                     updateProgress();
                 }));
             }
@@ -767,8 +781,6 @@
         
         async function fetchAllTrades(ticker, engine, market, board, dateRange) {
             const cacheKey = `${ticker}_${dateRange}`;
-            
-            // Проверяем кэш (кроме данных за сегодня)
             if (cachedTrades[cacheKey] && dateRange !== 'today') {
                 return cachedTrades[cacheKey];
             }
@@ -821,7 +833,6 @@
                 if (newTrades.length < 500) hasMore = false;
             }
             
-            // Кэшируем результат (кроме данных за сегодня)
             if (dateRange !== 'today') {
                 cachedTrades[cacheKey] = trades;
             }
@@ -849,7 +860,6 @@
             let totalBuyPrice = 0;
             let totalSellPrice = 0;
             
-            // Сортируем сделки по времени
             trades.sort((a, b) => {
                 const timeA = a.TRADETIME || '';
                 const timeB = b.TRADETIME || '';
@@ -859,7 +869,6 @@
             stats.firstTradeTime = trades[0].TRADETIME || '';
             stats.lastTradeTime = trades[trades.length - 1].TRADETIME || '';
             
-            // Анализируем каждую сделку
             trades.forEach(trade => {
                 const quantity = trade.QUANTITY || 0;
                 const price = trade.PRICE || 0;
@@ -884,38 +893,6 @@
             return stats;
         }
         
-        function updateStatsDisplay(stats, dateRange, instrument, cardId) {
-            const deltaVolume = stats.buyVolume - stats.sellVolume;
-            const deltaQuantity = stats.buyQuantity - stats.sellQuantity;
-            
-            const formatTime = (timeStr) => {
-                if (!timeStr) return '--:--:--';
-                return timeStr.length > 8 ? timeStr.substr(0, 8) : timeStr;
-            };
-            
-            const expirationInfo = instrument.type === 'futures' && instrument.expiration ? 
-                `<div class="stat-row"><span class="stat-label">Экспирация:</span> <span class="stat-value">${instrument.expiration}</span></div>` : '';
-            
-            document.getElementById(cardId).innerHTML = `
-                <div class="stat-title" style="font-size:12px;margin-bottom:2px;">
-                    ${instrument.ticker} <span style="color:${instrument.type === 'shares' ? 'var(--shares-color)' : 'var(--futures-color)'}">${instrument.type === 'shares' ? 'АКЦИЯ' : 'ФЬЮЧЕРС'}</span>
-                </div>
-                ${expirationInfo}
-                <div class="stat-row"><span class="stat-label">Всего:</span> <span class="stat-value">${stats.totalTrades}</span></div>
-                <div class="stat-row"><span class="stat-label">Покупок:</span> <span class="stat-value">${stats.buyTrades}</span> <span class="stat-label">Продаж:</span> <span class="stat-value">${stats.sellTrades}</span></div>
-                <div class="stat-row"><span class="stat-label">Покупки:</span> <span class="stat-value">${formatCurrency(stats.buyVolume)}</span></div>
-                <div class="stat-row"><span class="stat-label">Продажи:</span> <span class="stat-value">${formatCurrency(stats.sellVolume)}</span></div>
-                <div class="stat-row"><span class="stat-label">Дельта:</span> <span class="stat-value ${deltaVolume >= 0 ? 'positive' : 'negative'}">${formatCurrency(Math.abs(deltaVolume))}</span></div>
-                <div class="stat-row"><span class="stat-label">Δ шт:</span> <span class="stat-value ${deltaQuantity >= 0 ? 'positive' : 'negative'}">${deltaQuantity >= 0 ? '+' : '-'}${Math.abs(deltaQuantity).toLocaleString()}</span></div>
-                <div class="stat-row"><span class="stat-label">Ср.цена B/S:</span> <span class="stat-value">${stats.avgBuyPrice.toFixed(2)} / ${stats.avgSellPrice.toFixed(2)} ₽</span></div>
-                <div class="stat-row"><span class="stat-label">Период:</span> <span class="stat-value">${formatTime(stats.firstTradeTime)}-${formatTime(stats.lastTradeTime)}</span></div>
-                <div class="stat-row"><span class="stat-label">Соотношение:</span> <span class="stat-value">${stats.totalTrades > 0 ? (stats.buyTrades / stats.totalTrades * 100).toFixed(1) : 0}% / ${stats.totalTrades > 0 ? (stats.sellTrades / stats.totalTrades * 100).toFixed(1) : 0}%</span></div>
-            `;
-            
-            // Добавляем класс для плавного появления
-            document.getElementById(cardId).classList.add('loaded');
-        }
-        
         function formatCurrency(amount) {
             if (!amount) return '0 ₽';
             if (amount >= 1000000000) return (amount / 1000000000).toFixed(2) + ' млрд ₽';
@@ -923,6 +900,153 @@
             if (amount >= 1000) return (amount / 1000).toFixed(1) + ' тыс ₽';
             return amount.toFixed(0) + ' ₽';
         }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '--:--:--';
+            return timeStr.length > 8 ? timeStr.substr(0, 8) : timeStr;
+        }
+        
+        function updateStatsDisplay(stats, dateRange, instrument, cardId) {
+            const deltaVolume = stats.buyVolume - stats.sellVolume;
+            const deltaQuantity = stats.buyQuantity - stats.sellQuantity;
+            const totalVolume = stats.buyVolume + stats.sellVolume;
+            const buyRatio = stats.totalTrades > 0 ? (stats.buyTrades / stats.totalTrades) : 0;
+            
+            const cardElement = document.getElementById(cardId);
+            cardElement.innerHTML = `
+                <div class="stat-title" style="font-size:12px;margin-bottom:2px;">
+                    ${instrument.ticker} <span style="color:${instrument.type === 'shares' ? 'var(--shares-color)' : 'var(--futures-color)'}">${instrument.type === 'shares' ? 'АКЦИЯ' : 'ФЬЮЧЕРС'}</span>
+                </div>
+                ${instrument.type === 'futures' && instrument.expiration ? 
+                    `<div class="stat-row"><span class="stat-label">Экспирация:</span> <span class="stat-value">${instrument.expiration}</span></div>` : ''}
+                <div class="stat-row"><span class="stat-label">Всего:</span> <span class="stat-value">${stats.totalTrades}</span></div>
+                <div class="stat-row"><span class="stat-label">Покупок:</span> <span class="stat-value">${stats.buyTrades}</span> <span class="stat-label">Продаж:</span> <span class="stat-value">${stats.sellTrades}</span></div>
+                <div class="stat-row"><span class="stat-label">Дельта:</span> <span class="stat-value ${deltaVolume >= 0 ? 'positive' : 'negative'}">${formatCurrency(Math.abs(deltaVolume))}</span></div>
+                <div class="stat-row"><span class="stat-label">Δ шт:</span> <span class="stat-value ${deltaQuantity >= 0 ? 'positive' : 'negative'}">${deltaQuantity >= 0 ? '+' : '-'}${Math.abs(deltaQuantity).toLocaleString()}</span></div>
+                <div class="stat-row"><span class="stat-label">Ср.цена B/S:</span> <span class="stat-value">${stats.avgBuyPrice.toFixed(2)} / ${stats.avgSellPrice.toFixed(2)} ₽</span></div>
+                <div class="stat-row"><span class="stat-label">Период:</span> <span class="stat-value">${formatTime(stats.firstTradeTime)}-${formatTime(stats.lastTradeTime)}</span></div>
+                <div class="stat-row"><span class="stat-label">Соотношение:</span> <span class="stat-value">${(buyRatio * 100).toFixed(1)}% / ${((1 - buyRatio) * 100).toFixed(1)}%</span></div>
+            `;
+            
+            cardElement.dataset.stats = JSON.stringify({
+                ...stats,
+                deltaVolume,
+                deltaQuantity,
+                totalVolume,
+                buyRatio,
+                instrument
+            });
+            
+            cardElement.classList.add('loaded');
+            
+            // Добавляем обработчик клика
+            cardElement.addEventListener('click', function() {
+                showTradingDecision(JSON.parse(this.dataset.stats));
+            });
+        }
+
+        function showTradingDecision(stats) {
+            const modal = document.getElementById('decision-modal');
+            const content = document.getElementById('decision-content');
+            
+            const deltaPercent = stats.totalVolume > 0 ? 
+                Math.abs(stats.deltaVolume) / stats.totalVolume * 100 : 0;
+            
+            const isStrongTrend = deltaPercent > 20 && Math.abs(stats.buyRatio - 0.5) > 0.1;
+            const isContrarian = deltaPercent < 10 && Math.abs(stats.buyRatio - 0.5) > 0.2;
+            
+            let decisionHTML = `
+                <div class="decision-title">Анализ инструмента ${stats.instrument.ticker}</div>
+                <div class="decision-section">
+                    <div class="decision-text"><strong>Ключевые метрики:</strong></div>
+                    <div class="decision-text">Дельта объема: <span class="${stats.deltaVolume >= 0 ? 'decision-strong' : 'decision-warning'}">${formatCurrency(stats.deltaVolume)} (${deltaPercent.toFixed(1)}%)</span></div>
+                    <div class="decision-text">Соотношение сделок: <span class="${stats.buyRatio > 0.5 ? 'decision-strong' : 'decision-warning'}">${(stats.buyRatio * 100).toFixed(1)}% покупок / ${((1 - stats.buyRatio) * 100).toFixed(1)}% продаж</span></div>
+                    <div class="decision-text">Средние цены: покупки ${stats.avgBuyPrice.toFixed(2)} ₽ / продажи ${stats.avgSellPrice.toFixed(2)} ₽</div>
+                </div>
+            `;
+            
+            if (isStrongTrend) {
+                if (stats.deltaVolume > 0 && stats.buyRatio > 0.6) {
+                    decisionHTML += `
+                        <div class="decision-section" style="border-left: 3px solid var(--green);">
+                            <div class="decision-text"><span class="decision-strong">ВЫВОД: ПРЕОБЛАДАЕТ ПОКУПАТЕЛЬСКИЙ ПОТОК</span></div>
+                            <div class="decision-text">Наблюдается значительный перевес покупателей (${deltaPercent.toFixed(1)}% дельты объема) при ${(stats.buyRatio * 100).toFixed(1)}% покупок от общего числа сделок.</div>
+                        </div>
+                    `;
+                } else if (stats.deltaVolume < 0 && stats.buyRatio < 0.4) {
+                    decisionHTML += `
+                        <div class="decision-section" style="border-left: 3px solid var(--red);">
+                            <div class="decision-text"><span class="decision-warning">ВЫВОД: ПРЕОБЛАДАЕТ ПРОДАЖНЫЙ ПОТОК</span></div>
+                            <div class="decision-text">Наблюдается значительный перевес продавцов (${deltaPercent.toFixed(1)}% дельты объема) при ${((1 - stats.buyRatio) * 100).toFixed(1)}% продаж от общего числа сделок.</div>
+                        </div>
+                    `;
+                }
+            } else if (isContrarian) {
+                if (stats.buyRatio > 0.7 && deltaPercent < 10) {
+                    decisionHTML += `
+                        <div class="decision-section" style="border-left: 3px solid var(--red);">
+                            <div class="decision-text"><span class="decision-warning">ВЫВОД: МНОГО ПОКУПОК, НО БЕЗ ОБЪЕМА</span></div>
+                            <div class="decision-text">Большинство сделок (${(stats.buyRatio * 100).toFixed(1)}%) - покупки, но общий объем почти равен (дельта ${deltaPercent.toFixed(1)}%). Возможен откат.</div>
+                        </div>
+                    `;
+                } else if (stats.buyRatio < 0.3 && deltaPercent < 10) {
+                    decisionHTML += `
+                        <div class="decision-section" style="border-left: 3px solid var(--green);">
+                            <div class="decision-text"><span class="decision-strong">ВЫВОД: МНОГО ПРОДАЖ, НО БЕЗ ОБЪЕМА</span></div>
+                            <div class="decision-text">Большинство сделок (${((1 - stats.buyRatio) * 100).toFixed(1)}%) - продажи, но общий объем почти равен (дельта ${deltaPercent.toFixed(1)}%). Возможен отскок.</div>
+                        </div>
+                    `;
+                }
+            } else {
+                decisionHTML += `
+                    <div class="decision-section">
+                        <div class="decision-text">ВЫВОД: РЫНОК В БАЛАНСЕ</div>
+                        <div class="decision-text">Нет явного перевеса покупателей или продавцов. Дельта объема: ${deltaPercent.toFixed(1)}%, соотношение сделок близко к равновесию.</div>
+                    </div>
+                `;
+            }
+            
+            decisionHTML += `
+                <div class="decision-section">
+                    <div class="decision-text"><strong>Детализация:</strong></div>
+                    <div class="decision-text">Общий объем: ${formatCurrency(stats.totalVolume)}</div>
+                    <div class="decision-text">Дельта в штуках: ${stats.deltaQuantity >= 0 ? '+' : ''}${stats.deltaQuantity}</div>
+                    <div class="decision-text">Период данных: ${formatTime(stats.firstTradeTime)} - ${formatTime(stats.lastTradeTime)}</div>
+                </div>
+            `;
+            
+            content.innerHTML = decisionHTML;
+            modal.style.display = 'block';
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработчики модального окна
+            document.querySelector('.close-modal').addEventListener('click', function() {
+                document.getElementById('decision-modal').style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('decision-modal')) {
+                    document.getElementById('decision-modal').style.display = 'none';
+                }
+            });
+            
+            // Обработчики управления
+            document.getElementById('add-ticker-btn').addEventListener('click', addInstrument);
+            document.getElementById('market-type').addEventListener('change', updateInstrumentSelector);
+            document.getElementById('date-selector').addEventListener('change', loadAndAnalyzeAll);
+            document.getElementById('ticker-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addInstrument();
+                }
+            });
+            
+            // Загрузка данных
+            loadInstrumentsList();
+            renderSelectedInstruments();
+            loadAndAnalyzeAll();
+        });
     </script>
 </body>
 </html>
