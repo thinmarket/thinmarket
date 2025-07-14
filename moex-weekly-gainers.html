@@ -121,6 +121,36 @@
             color: var(--text-secondary);
             font-size: 16px;
         }
+        /* Зеленый прогресс-бар */
+        progress {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 18px;
+            border-radius: 8px;
+            background-color: #222;
+            overflow: hidden;
+        }
+        progress::-webkit-progress-bar {
+            background-color: #222;
+            border-radius: 8px;
+        }
+        progress::-webkit-progress-value {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress::-moz-progress-bar {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress[value] {
+            color: var(--green);
+        }
+        /* Для старых браузеров */
+        progress[value]::-ms-fill {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
         @media (max-width: 900px) {
             .stocks-table-container { padding: 15px; }
             .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
@@ -150,6 +180,9 @@
     <div class="stocks-table-container">
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
             <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+        </div>
+        <div style="margin-bottom:10px;">
+            <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
         </div>
         <div id="status" class="loading">Загрузка...</div>
         <div style="overflow-x: auto;">
@@ -294,6 +327,11 @@ async function loadGainers() {
     document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
     const gainers = [];
     let checked = 0;
+    // Показать прогресс-бар
+    const progressBar = document.getElementById('progress-bar');
+    progressBar.style.display = '';
+    progressBar.value = 0;
+    progressBar.max = tickers.length;
     for (const t of tickers) {
         const klines = await getLastWeeklyKlines(t.symbol, t.type);
         if (klines && klines.last_close > klines.prev_close) {
@@ -310,7 +348,9 @@ async function loadGainers() {
         if (checked % 10 === 0) {
             document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
         }
+        progressBar.value = checked;
     }
+    progressBar.style.display = 'none'; // Скрыть после завершения
     document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ростом за неделю. Загружаем последние цены...`;
     // Получаем последние цены параллельно
     await Promise.all(gainers.map(async g => {
