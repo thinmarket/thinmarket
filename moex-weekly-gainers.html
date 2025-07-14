@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - MOEX Weekly Gainers</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+        }
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1.title {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 800;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        .stocks-table-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .stocks-table th {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            user-select: none;
+        }
+        .stocks-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
+        }
+        .stocks-table tr:last-child td {
+            border-bottom: none;
+        }
+        .stocks-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .ticker-link {
+            color: #8be9fd;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .price-green { color: var(--green); font-weight: bold; }
+        .price-red   { color: var(--red); font-weight: bold; }
+        .price-gray  { color: #b0b0b0; font-weight: bold; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        @media (max-width: 900px) {
+            .stocks-table-container { padding: 15px; }
+            .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
+            h1.title { font-size: 28px; }
+        }
+        @media (max-width: 768px) {
+            .header { padding: 15px; }
+            .stocks-table-container { padding: 10px; }
+            h1.title { font-size: 24px; }
+            .back-button { padding: 10px 20px; font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            h1.title { font-size: 18px; }
+            .stocks-table th, .stocks-table td { padding: 6px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="title-container">
+                <h1 class="title">MOEX Weekly Gainers</h1>
+            </div>
+            <a href="index.html" class="back-button">← На главную</a>
+        </div>
+    </div>
+    <div class="stocks-table-container">
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+        </div>
+        <div id="status" class="loading">Загрузка...</div>
+        <div style="overflow-x: auto;">
+            <table class="stocks-table">
+                <thead>
+                <tr>
+                    <th>Тикер</th>
+                    <th>Название</th>
+                    <th>Тип</th>
+                    <th>Неделя 1</th>
+                    <th>Неделя 2</th>
+                    <th>Хай недели 2</th>
+                    <th>Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span></th>
+                </tr>
+                </thead>
+                <tbody id="gainers-table-body">
+                    <tr><td colspan="7" class="loading">Загрузка данных...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<script>
+const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+const CANDLE_URLS = {
+    'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}/candles.json",
+    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json"
+};
+const MARKETDATA_URLS = {
+    'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}.json?iss.meta=off",
+    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}.json?iss.meta=off"
+};
+
+async function getAllTickers() {
+    let tickers = [];
+    // Акции
+    let resp = await fetch(TQBR_TICKERS_URL);
+    let data = await resp.json();
+    tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Акция'})));
+    // Фьючерсы
+    resp = await fetch(FORTS_TICKERS_URL);
+    data = await resp.json();
+    tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Фьючерс'})));
+    return tickers;
+}
+
+async function getLastWeeklyKlines(symbol, ttype) {
+    const url = CANDLE_URLS[ttype].replace("{}", symbol);
+    const today = new Date();
+    const from = new Date(today.getTime() - 30*24*60*60*1000);
+    const params = `?interval=7&from=${from.toISOString().slice(0,10)}&till=${today.toISOString().slice(0,10)}`;
+    const resp = await fetch(url + params);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const candles = data.candles?.data || [];
+    const columns = data.candles?.columns || [];
+    if (candles.length >= 3) {
+        const last = Object.fromEntries(columns.map((k,i)=>[k,candles[candles.length-2][i]]));
+        const prev = Object.fromEntries(columns.map((k,i)=>[k,candles[candles.length-3][i]]));
+        return {
+            prev_close: parseFloat(prev.close),
+            last_close: parseFloat(last.close),
+            last_high: parseFloat(last.high)
+        };
+    }
+    return null;
+}
+
+async function getLastPrice(symbol, ttype) {
+    const url = MARKETDATA_URLS[ttype].replace("{}", symbol);
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const md = data.marketdata || {};
+    const columns = md.columns || [];
+    const rows = md.data || [];
+    if (!columns.length || !rows.length) return null;
+    const idx = columns.indexOf("LAST");
+    if (idx === -1) return null;
+    const val = rows[0][idx];
+    return val !== null ? parseFloat(val) : null;
+}
+
+function renderTable(gainers) {
+    const tbody = document.getElementById('gainers-table-body');
+    tbody.innerHTML = '';
+    if (!gainers.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных для отображения</td></tr>';
+        return;
+    }
+    for (const g of gainers) {
+        const tr = document.createElement('tr');
+        // Тикер (ссылка)
+        const tdTicker = document.createElement('td');
+        tdTicker.textContent = g.symbol;
+        tdTicker.className = 'ticker-link';
+        tdTicker.onclick = () => {
+            let url = g.type === 'Фьючерс' ?
+                `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}1!` :
+                `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}`;
+            window.open(url, '_blank');
+        };
+        tr.appendChild(tdTicker);
+        // Название
+        const tdName = document.createElement('td');
+        tdName.textContent = g.shortname;
+        tr.appendChild(tdName);
+        // Тип
+        const tdType = document.createElement('td');
+        tdType.textContent = g.type;
+        tr.appendChild(tdType);
+        // Неделя 1
+        const tdPrev = document.createElement('td');
+        tdPrev.textContent = g.prev_close?.toFixed(2) ?? '-';
+        tr.appendChild(tdPrev);
+        // Неделя 2
+        const tdLast = document.createElement('td');
+        tdLast.textContent = g.last_close?.toFixed(2) ?? '-';
+        tr.appendChild(tdLast);
+        // Хай недели 2
+        const tdHigh = document.createElement('td');
+        tdHigh.textContent = g.last_high?.toFixed(2) ?? '-';
+        tr.appendChild(tdHigh);
+        // Последняя цена
+        const tdPrice = document.createElement('td');
+        if (g.price !== undefined && g.price !== null) {
+            tdPrice.textContent = g.price.toFixed(2);
+            if (g.price > g.last_high) tdPrice.className = 'price-green';
+            else if (g.price < g.last_high) tdPrice.className = 'price-red';
+            else tdPrice.className = 'price-gray';
+        } else {
+            tdPrice.textContent = '-';
+        }
+        tr.appendChild(tdPrice);
+        tbody.appendChild(tr);
+    }
+}
+
+async function loadGainers() {
+    document.getElementById('status').textContent = 'Получаем тикеры...';
+    const tickers = await getAllTickers();
+    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
+    const gainers = [];
+    let checked = 0;
+    for (const t of tickers) {
+        const klines = await getLastWeeklyKlines(t.symbol, t.type);
+        if (klines && klines.last_close > klines.prev_close) {
+            gainers.push({
+                symbol: t.symbol,
+                shortname: t.shortname,
+                type: t.type,
+                prev_close: klines.prev_close,
+                last_close: klines.last_close,
+                last_high: klines.last_high
+            });
+        }
+        checked++;
+        if (checked % 10 === 0) {
+            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+        }
+    }
+    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ростом за неделю. Загружаем последние цены...`;
+    // Получаем последние цены параллельно
+    await Promise.all(gainers.map(async g => {
+        g.price = await getLastPrice(g.symbol, g.type);
+    }));
+    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ростом за неделю.`;
+    renderTable(gainers);
+    // Сохраняем для автообновления цен
+    window._moexGainers = gainers;
+}
+
+async function updatePrices() {
+    if (!window._moexGainers) return;
+    await Promise.all(window._moexGainers.map(async g => {
+        g.price = await getLastPrice(g.symbol, g.type);
+    }));
+    renderTable(window._moexGainers);
+}
+
+// Первый запуск
+loadGainers();
+// Кнопка обновления
+const refreshBtn = document.getElementById('refresh-btn');
+refreshBtn.addEventListener('click', () => {
+    loadGainers();
+});
+// Автообновление цен раз в 5 секунд (только цены, не тикеры)
+setInterval(updatePrices, 5000);
+</script>
+</body>
+</html> 
