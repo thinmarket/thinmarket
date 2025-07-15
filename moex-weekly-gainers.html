@@ -477,7 +477,7 @@ async function loadGainers() {
     await Promise.all(gainers.map(async g => {
         g.price = await getLastPrice(g.symbol, g.type);
     }));
-    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю.`;
+    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за две недели. Проверьте продолжение ${(searchMode==='long'?'роста':'падения')} по текущей цене.`;
     renderTable(gainers);
     // Сохраняем для автообновления цен
     window._moexGainers = gainers;
