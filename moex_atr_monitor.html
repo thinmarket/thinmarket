@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOEX ATR Monitor</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+        }
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1.title {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 800;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        .stocks-table-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .stocks-table th {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            user-select: none;
+        }
+        .stocks-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
+        }
+        .stocks-table tr:last-child td {
+            border-bottom: none;
+        }
+        .stocks-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .ticker-link {
+            color: #888;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .ticker-link:hover {
+            color: #b0b0b0;
+            background: #333;
+        }
+        .score-cell {
+            font-weight: bold;
+            color: #FFD600;
+        }
+        .highlight { color: #00ff00; font-weight: bold; }
+        .price-green { color: var(--green); font-weight: bold; }
+        .price-red   { color: var(--red); font-weight: bold; }
+        .price-gray  { color: #b0b0b0; font-weight: bold; }
+        .loading {
+            text-align: center;
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+        progress {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 18px;
+            border-radius: 8px;
+            background-color: #222;
+            overflow: hidden;
+        }
+        progress::-webkit-progress-bar {
+            background-color: #222;
+            border-radius: 8px;
+        }
+        progress::-webkit-progress-value {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress::-moz-progress-bar {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress[value] {
+            color: var(--green);
+        }
+        progress[value]::-ms-fill {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        @media (max-width: 900px) {
+            .stocks-table-container { padding: 15px; }
+            .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
+            h1.title { font-size: 28px; }
+        }
+        @media (max-width: 768px) {
+            .header { padding: 15px; }
+            .stocks-table-container { padding: 10px; }
+            h1.title { font-size: 24px; }
+            .back-button { padding: 10px 20px; font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            h1.title { font-size: 18px; }
+            .stocks-table th, .stocks-table td { padding: 6px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="title-container">
+                <h1 class="title">MOEX ATR Monitor</h1>
+                <span id="how-it-works" style="cursor:pointer;color:#8BC34A;text-decoration:underline;font-size:15px;margin-left:18px;">Как работает?</span>
+            </div>
+            <a href="index.html" class="back-button">← На главную</a>
+        </div>
+    </div>
+    <div class="stocks-table-container">
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+        </div>
+        <div style="margin-bottom:10px;">
+            <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
+        </div>
+        <div id="status" class="loading">Загрузка...</div>
+        <div style="overflow-x: auto;">
+            <table class="stocks-table">
+                <thead>
+                <tr>
+                    <th>Тикер</th>
+                    <th>Название</th>
+                    <th>Тип</th>
+                    <th>Средний ATR (7д)</th>
+                    <th>Текущий ATR</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Дата</th>
+                    <th>Оценка (1-10)</th>
+                </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="9" class="loading">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<script>
+const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+const CANDLE_URLS = {
+    'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}/candles.json",
+    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json"
+};
+
+async function getAllTickers() {
+    let tickers = [];
+    // Акции
+    let resp = await fetch(TQBR_TICKERS_URL);
+    let data = await resp.json();
+    tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Акция'})));
+    // Фьючерсы
+    resp = await fetch(FORTS_TICKERS_URL);
+    data = await resp.json();
+    tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Фьючерс'})));
+    return tickers;
+}
+
+async function getDailyCandles(symbol, ttype, days=8) {
+    const url = CANDLE_URLS[ttype].replace("{}", symbol);
+    const today = new Date();
+    const from = new Date(today.getTime() - days*24*60*60*1000);
+    const params = `?interval=24&from=${from.toISOString().slice(0,10)}&till=${today.toISOString().slice(0,10)}`;
+    const resp = await fetch(url + params);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const candles = data.candles?.data || [];
+    const columns = data.candles?.columns || [];
+    return candles.map(row => Object.fromEntries(columns.map((k,i)=>[k,row[i]])));
+}
+
+function calcATR(candles, count=7) {
+    if (!candles || candles.length < count) return null;
+    let sum = 0;
+    for (let i = candles.length-count-1; i < candles.length-1; ++i) {
+        const c = candles[i];
+        sum += Math.abs(c.high - c.low);
+    }
+    return sum / count;
+}
+
+function getCurrentATR(candles) {
+    if (!candles || candles.length < 1) return null;
+    const c = candles[candles.length-1];
+    return Math.abs(c.high - c.low);
+}
+
+function getCurrentDate(candles) {
+    if (!candles || candles.length < 1) return '';
+    return candles[candles.length-1].begin?.slice(0,10) || '';
+}
+
+function assignScores(results) {
+    const ratios = results.map(r => r.currATR / r.avgATR);
+    const sorted = [...ratios].sort((a, b) => a - b);
+    results.forEach((r, i) => {
+        const ratio = r.currATR / r.avgATR;
+        const idx = sorted.indexOf(ratio);
+        let score = Math.floor(idx / sorted.length * 10) + 1;
+        if (score > 10) score = 10;
+        r.score = score;
+    });
+}
+
+async function main() {
+    document.getElementById('status').textContent = 'Загрузка тикеров...';
+    const tickers = await getAllTickers();
+    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров... (это может занять несколько минут)`;
+    const results = [];
+    let checked = 0;
+    let stocksTotal = 0, futsTotal = 0;
+    let stocksInTable = 0, futsInTable = 0;
+    const progressBar = document.getElementById('progress-bar');
+    progressBar.style.display = '';
+    progressBar.value = 0;
+    progressBar.max = tickers.length;
+    for (const t of tickers) {
+        if (t.type === 'Акция') stocksTotal++; else futsTotal++;
+        const candles = await getDailyCandles(t.symbol, t.type);
+        if (!candles || candles.length < 8) { checked++; progressBar.value = checked; continue; }
+        const avgATR = calcATR(candles, 7);
+        const currATR = getCurrentATR(candles);
+        if (avgATR && currATR && currATR > avgATR) {
+            results.push({
+                symbol: t.symbol,
+                shortname: t.shortname,
+                type: t.type,
+                avgATR: avgATR,
+                currATR: currATR,
+                high: candles[candles.length-1].high,
+                low: candles[candles.length-1].low,
+                date: getCurrentDate(candles)
+            });
+            if (t.type === 'Акция') stocksInTable++; else futsInTable++;
+        }
+        checked++;
+        if (checked % 10 === 0) {
+            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+        }
+        progressBar.value = checked;
+    }
+    progressBar.style.display = 'none';
+    assignScores(results);
+    document.getElementById('status').textContent = `Готово. Найдено: ${results.length} тикеров.\nАкций обработано: ${stocksTotal}, фьючерсов обработано: ${futsTotal}.\nВ таблице: акций — ${stocksInTable}, фьючерсов — ${futsInTable}.`;
+    renderTable(results);
+}
+
+document.getElementById('refresh-btn').addEventListener('click', main);
+document.getElementById('how-it-works').onclick = function() {
+    alert(
+        'Для каждого тикера вычисляется коэффициент превышения:\n' +
+        '  Коэффициент = Текущий ATR / Средний ATR за 7 дней\n' +
+        '\n' +
+        'Все тикеры сортируются по этому коэффициенту.\n' +
+        '\n' +
+        'Балл (1-10) присваивается по формуле:\n' +
+        '  Балл = 1 + floor(Позиция тикера в отсортированном списке / N * 10)\n' +
+        '  где N — общее число тикеров в таблице.\n' +
+        '\n' +
+        '— Оценка (1-10) показывает степень расхождения: 10 — самое большое превышение, 1 — минимальное среди найденных.\n' +
+        '— Клик по тикеру открывает график на TradingView.\n' +
+        '— Можно обновить список вручную или дождаться автообновления.'
+    );
+};
+
+function renderTable(data) {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = '';
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="loading">Нет тикеров с превышением ATR</td></tr>';
+        return;
+    }
+    for (const row of data) {
+        const tr = document.createElement('tr');
+        // Тикер как ссылка
+        const tdTicker = document.createElement('td');
+        tdTicker.textContent = row.symbol;
+        tdTicker.className = 'ticker-link';
+        tdTicker.title = 'Открыть в TradingView';
+        tdTicker.onclick = () => {
+            let url = row.type === 'Фьючерс'
+                ? `https://www.tradingview.com/chart/?symbol=MOEX:${row.symbol}1!`
+                : `https://www.tradingview.com/chart/?symbol=MOEX:${row.symbol}`;
+            window.open(url, '_blank');
+        };
+        tr.appendChild(tdTicker);
+        // Остальные ячейки
+        const tdShortname = document.createElement('td');
+        tdShortname.textContent = row.shortname;
+        tr.appendChild(tdShortname);
+        const tdType = document.createElement('td');
+        tdType.textContent = row.type;
+        tr.appendChild(tdType);
+        const tdAvgATR = document.createElement('td');
+        tdAvgATR.textContent = row.avgATR.toFixed(2);
+        tr.appendChild(tdAvgATR);
+        const tdCurrATR = document.createElement('td');
+        tdCurrATR.textContent = row.currATR.toFixed(2);
+        tdCurrATR.className = 'highlight';
+        tr.appendChild(tdCurrATR);
+        const tdHigh = document.createElement('td');
+        tdHigh.textContent = row.high;
+        tr.appendChild(tdHigh);
+        const tdLow = document.createElement('td');
+        tdLow.textContent = row.low;
+        tr.appendChild(tdLow);
+        const tdDate = document.createElement('td');
+        tdDate.textContent = row.date;
+        tr.appendChild(tdDate);
+        // Оценка (1-10)
+        const tdScore = document.createElement('td');
+        tdScore.textContent = row.score;
+        tdScore.className = 'score-cell';
+        tr.appendChild(tdScore);
+        tbody.appendChild(tr);
+    }
+}
+
+main();
+</script>
+</body>
+</html> 
