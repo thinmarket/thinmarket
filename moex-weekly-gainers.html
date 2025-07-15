@@ -248,6 +248,11 @@
             <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
         </div>
         <div id="status" class="loading">Загрузка...</div>
+        <div id="deep-mode-container" style="display:none;margin-bottom:10px;">
+            <label style="font-size:15px;user-select:none;cursor:pointer;">
+                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
+            </label>
+        </div>
         <div style="overflow-x: auto;">
             <table class="stocks-table">
                 <thead>
@@ -331,10 +336,13 @@ async function getLastPrice(symbol, ttype) {
 }
 
 let searchMode = 'long'; // 'long' или 'short'
+let allGainers = []; // для хранения полного списка
 
 const modeToggle = document.getElementById('mode-toggle');
 const modeLabel = document.getElementById('mode-label');
 const highlowCol = document.getElementById('highlow-col');
+const deepModeContainer = document.getElementById('deep-mode-container');
+const deepModeToggle = document.getElementById('deep-mode-toggle');
 modeToggle.addEventListener('change', () => {
     searchMode = modeToggle.checked ? 'short' : 'long';
     modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
@@ -346,6 +354,22 @@ document.addEventListener('DOMContentLoaded', () => {
     highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
 });
 
+deepModeToggle.addEventListener('change', () => {
+    if (deepModeToggle.checked) {
+        renderTable(filterDeep(allGainers));
+    } else {
+        renderTable(allGainers);
+    }
+});
+
+function filterDeep(gainers) {
+    if (searchMode === 'long') {
+        return gainers.filter(g => g.price !== undefined && g.price > g.last_high);
+    } else {
+        return gainers.filter(g => g.price !== undefined && g.price < g.last_low);
+    }
+}
+
 document.getElementById('how-it-works').onclick = function() {
     alert(
         'Страница ищет акции и фьючерсы, которые за последнюю неделю:\n' +
@@ -354,7 +378,8 @@ document.getElementById('how-it-works').onclick = function() {
         'В таблице:\n' +
         '- Для акций можно открыть график на TradingView\n' +
         '- Для фьючерсов график недоступен\n' +
-        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.'
+        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.\n' +
+        '\nГлубокий анализ: фильтрует только те тикеры, где текущая цена выше high недели 2 (лонг) или ниже low недели 2 (шорт).'
     );
 };
 
@@ -478,7 +503,10 @@ async function loadGainers() {
         g.price = await getLastPrice(g.symbol, g.type);
     }));
     document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за две недели. Проверьте продолжение ${(searchMode==='long'?'роста':'падения')} по текущей цене.`;
+    allGainers = gainers;
     renderTable(gainers);
+    deepModeContainer.style.display = gainers.length ? '' : 'none';
+    deepModeToggle.checked = false;
     // Сохраняем для автообновления цен
     window._moexGainers = gainers;
 }
@@ -488,7 +516,11 @@ async function updatePrices() {
     await Promise.all(window._moexGainers.map(async g => {
         g.price = await getLastPrice(g.symbol, g.type);
     }));
-    renderTable(window._moexGainers);
+    if (deepModeToggle.checked) {
+        renderTable(filterDeep(window._moexGainers));
+    } else {
+        renderTable(window._moexGainers);
+    }
 }
 
 // Первый запуск
