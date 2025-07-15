@@ -107,7 +107,7 @@
             background: rgba(255,255,255,0.05);
         }
         .ticker-link {
-            color: #8be9fd;
+            color: #888;
             cursor: pointer;
             text-decoration: underline;
             font-weight: bold;
@@ -117,9 +117,9 @@
         .price-gray  { color: #b0b0b0; font-weight: bold; }
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 8px 0;
             color: var(--text-secondary);
-            font-size: 16px;
+            font-size: 15px;
         }
         /* Зеленый прогресс-бар */
         progress {
@@ -151,6 +151,54 @@
             background: linear-gradient(90deg, var(--green), #8BC34A);
             border-radius: 8px;
         }
+        /* Красивый тумблер-рычаг */
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #444;
+            transition: .3s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--green);
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(76,175,80,0.2);
+        }
+        .switch input:checked + .slider {
+            background: #222;
+        }
+        .switch input:checked + .slider:before {
+            transform: translateX(22px);
+            background: #F44336;
+        }
         @media (max-width: 900px) {
             .stocks-table-container { padding: 15px; }
             .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
@@ -166,6 +214,13 @@
             h1.title { font-size: 18px; }
             .stocks-table th, .stocks-table td { padding: 6px; font-size: 12px; }
         }
+        /* Неактивная ссылка для фьючерсов */
+        .ticker-link-disabled {
+            color: #888 !important;
+            text-decoration: none !important;
+            cursor: not-allowed !important;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -173,12 +228,20 @@
         <div class="header-content">
             <div class="title-container">
                 <h1 class="title">MOEX Weekly Gainers</h1>
+                <span id="how-it-works" style="cursor:pointer;color:#8BC34A;text-decoration:underline;font-size:15px;margin-left:18px;">Как работает?</span>
             </div>
             <a href="index.html" class="back-button">← На главную</a>
         </div>
     </div>
     <div class="stocks-table-container">
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <label class="switch-label">
+                <span id="mode-label" style="margin-right:10px;font-weight:bold;font-size:15px;">Режим: Лонг</span>
+                <span class="switch">
+                    <input type="checkbox" id="mode-toggle">
+                    <span class="slider"></span>
+                </span>
+            </label>
             <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
         </div>
         <div style="margin-bottom:10px;">
@@ -194,7 +257,7 @@
                     <th>Тип</th>
                     <th>Неделя 1</th>
                     <th>Неделя 2</th>
-                    <th>Хай недели 2</th>
+                    <th id="highlow-col">Хай недели 2</th>
                     <th>Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span></th>
                 </tr>
                 </thead>
@@ -245,7 +308,8 @@ async function getLastWeeklyKlines(symbol, ttype) {
         return {
             prev_close: parseFloat(prev.close),
             last_close: parseFloat(last.close),
-            last_high: parseFloat(last.high)
+            last_high: parseFloat(last.high),
+            last_low: parseFloat(last.low)
         };
     }
     return null;
@@ -266,6 +330,34 @@ async function getLastPrice(symbol, ttype) {
     return val !== null ? parseFloat(val) : null;
 }
 
+let searchMode = 'long'; // 'long' или 'short'
+
+const modeToggle = document.getElementById('mode-toggle');
+const modeLabel = document.getElementById('mode-label');
+const highlowCol = document.getElementById('highlow-col');
+modeToggle.addEventListener('change', () => {
+    searchMode = modeToggle.checked ? 'short' : 'long';
+    modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
+    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+    loadGainers();
+});
+// При первой загрузке тоже выставляем правильное название
+document.addEventListener('DOMContentLoaded', () => {
+    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+});
+
+document.getElementById('how-it-works').onclick = function() {
+    alert(
+        'Страница ищет акции и фьючерсы, которые за последнюю неделю:\n' +
+        '- В режиме Лонг: выросли (цена закрытия недели 2 выше недели 1)\n' +
+        '- В режиме Шорт: упали (цена закрытия недели 2 ниже недели 1)\n' +
+        'В таблице:\n' +
+        '- Для акций можно открыть график на TradingView\n' +
+        '- Для фьючерсов график недоступен\n' +
+        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.'
+    );
+};
+
 function renderTable(gainers) {
     const tbody = document.getElementById('gainers-table-body');
     tbody.innerHTML = '';
@@ -275,16 +367,22 @@ function renderTable(gainers) {
     }
     for (const g of gainers) {
         const tr = document.createElement('tr');
-        // Тикер (ссылка)
+        // Тикер (ссылка или неактивная ячейка)
         const tdTicker = document.createElement('td');
         tdTicker.textContent = g.symbol;
-        tdTicker.className = 'ticker-link';
-        tdTicker.onclick = () => {
-            let url = g.type === 'Фьючерс' ?
-                `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}1!` :
-                `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}`;
-            window.open(url, '_blank');
-        };
+        if (g.type === 'Акция') {
+            tdTicker.className = 'ticker-link';
+            tdTicker.title = 'Открыть график на TradingView';
+            tdTicker.onclick = () => {
+                let url = `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}`;
+                window.open(url, '_blank');
+            };
+        } else {
+            tdTicker.className = 'ticker-link-disabled';
+            tdTicker.title = 'График недоступен для фьючерсов';
+            tdTicker.style.color = '#888';
+            tdTicker.style.cursor = 'not-allowed';
+        }
         tr.appendChild(tdTicker);
         // Название
         const tdName = document.createElement('td');
@@ -302,17 +400,27 @@ function renderTable(gainers) {
         const tdLast = document.createElement('td');
         tdLast.textContent = g.last_close?.toFixed(2) ?? '-';
         tr.appendChild(tdLast);
-        // Хай недели 2
-        const tdHigh = document.createElement('td');
-        tdHigh.textContent = g.last_high?.toFixed(2) ?? '-';
-        tr.appendChild(tdHigh);
+        // Хай/Лоу недели 2
+        const tdHighLow = document.createElement('td');
+        if (searchMode === 'long') {
+            tdHighLow.textContent = g.last_high?.toFixed(2) ?? '-';
+        } else {
+            tdHighLow.textContent = g.last_low?.toFixed(2) ?? '-';
+        }
+        tr.appendChild(tdHighLow);
         // Последняя цена
         const tdPrice = document.createElement('td');
         if (g.price !== undefined && g.price !== null) {
             tdPrice.textContent = g.price.toFixed(2);
-            if (g.price > g.last_high) tdPrice.className = 'price-green';
-            else if (g.price < g.last_high) tdPrice.className = 'price-red';
-            else tdPrice.className = 'price-gray';
+            if (searchMode === 'long') {
+                if (g.price > g.last_high) tdPrice.className = 'price-green';
+                else if (g.price < g.last_high) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            } else {
+                if (g.price < g.last_low) tdPrice.className = 'price-green';
+                else if (g.price > g.last_low) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            }
         } else {
             tdPrice.textContent = '-';
         }
@@ -334,15 +442,28 @@ async function loadGainers() {
     progressBar.max = tickers.length;
     for (const t of tickers) {
         const klines = await getLastWeeklyKlines(t.symbol, t.type);
-        if (klines && klines.last_close > klines.prev_close) {
-            gainers.push({
-                symbol: t.symbol,
-                shortname: t.shortname,
-                type: t.type,
-                prev_close: klines.prev_close,
-                last_close: klines.last_close,
-                last_high: klines.last_high
-            });
+        if (klines) {
+            if (searchMode === 'long' && klines.last_close > klines.prev_close) {
+                gainers.push({
+                    symbol: t.symbol,
+                    shortname: t.shortname,
+                    type: t.type,
+                    prev_close: klines.prev_close,
+                    last_close: klines.last_close,
+                    last_high: klines.last_high,
+                    last_low: klines.last_low
+                });
+            } else if (searchMode === 'short' && klines.last_close < klines.prev_close) {
+                gainers.push({
+                    symbol: t.symbol,
+                    shortname: t.shortname,
+                    type: t.type,
+                    prev_close: klines.prev_close,
+                    last_close: klines.last_close,
+                    last_high: klines.last_high,
+                    last_low: klines.last_low
+                });
+            }
         }
         checked++;
         if (checked % 10 === 0) {
@@ -351,12 +472,12 @@ async function loadGainers() {
         progressBar.value = checked;
     }
     progressBar.style.display = 'none'; // Скрыть после завершения
-    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ростом за неделю. Загружаем последние цены...`;
+    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю. Загружаем последние цены...`;
     // Получаем последние цены параллельно
     await Promise.all(gainers.map(async g => {
         g.price = await getLastPrice(g.symbol, g.type);
     }));
-    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ростом за неделю.`;
+    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю.`;
     renderTable(gainers);
     // Сохраняем для автообновления цен
     window._moexGainers = gainers;
