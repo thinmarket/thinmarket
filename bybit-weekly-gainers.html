@@ -214,6 +214,9 @@
             background: #232629;
             color: #e0e0e0;
         }
+        .breakout-row {
+            background: rgba(255, 215, 0, 0.18) !important;
+        }
         @media (max-width: 900px) {
             .stocks-table-container { padding: 15px; }
             .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
@@ -350,6 +353,7 @@ function renderTable(gainers) {
     }
     for (const g of gainers) {
         const tr = document.createElement('tr');
+        if (g._breakout) tr.classList.add('breakout-row');
         // Тикер (ссылка на TradingView)
         const tdTicker = document.createElement('td');
         tdTicker.textContent = g.symbol;
@@ -451,7 +455,7 @@ async function loadGainers() {
     document.getElementById('status').textContent = 'Получаем тикеры...';
     const tickers = await getAllTickers();
     document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
-    const gainers = [];
+    const all = [];
     let checked = 0;
     const progressBar = document.getElementById('progress-bar');
     progressBar.style.display = '';
@@ -459,27 +463,15 @@ async function loadGainers() {
     progressBar.max = tickers.length;
     for (const t of tickers) {
         const klines = await getLastWeeklyKlines(t.symbol, t.category);
-        if (klines) {
-            if (searchMode === 'long' && klines.close2 > klines.close1) {
-                gainers.push({
-                    symbol: t.symbol,
-                    category: t.category,
-                    close1: klines.close1,
-                    close2: klines.close2,
-                    high2: klines.high2,
-                    low2: klines.low2
-                });
-            } else if (searchMode === 'short' && klines.close2 < klines.close1) {
-                gainers.push({
-                    symbol: t.symbol,
-                    category: t.category,
-                    close1: klines.close1,
-                    close2: klines.close2,
-                    high2: klines.high2,
-                    low2: klines.low2
-                });
-            }
-        }
+        if (!klines) continue;
+        all.push({
+            symbol: t.symbol,
+            category: t.category,
+            close1: klines.close1,
+            close2: klines.close2,
+            high2: klines.high2,
+            low2: klines.low2
+        });
         checked++;
         if (checked % 10 === 0) {
             document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
@@ -487,14 +479,32 @@ async function loadGainers() {
         progressBar.value = checked;
     }
     progressBar.style.display = 'none';
-    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю. Загружаем последние цены...`;
+    document.getElementById('status').textContent = `Загружаем последние цены...`;
     prices = await getLastPrices();
-    for (const g of gainers) {
+    for (const g of all) {
         g.price = prices[`${g.symbol}_${g.category}`];
     }
-    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за две недели. Проверьте продолжение ${(searchMode==='long'?'роста':'падения')} по текущей цене.`;
-    allGainers = gainers;
-    renderTable(filterDeep(gainers));
+    // Формируем итоговый список
+    const result = [];
+    for (const g of all) {
+        if (
+            (searchMode === 'long' && g.close2 > g.close1) ||
+            (searchMode === 'short' && g.close2 < g.close1)
+        ) {
+            // Классика
+            result.push(g);
+        } else if (
+            (searchMode === 'long' && g.price > g.high2) ||
+            (searchMode === 'short' && g.price < g.low2)
+        ) {
+            // Breakout
+            g._breakout = true;
+            result.push(g);
+        }
+    }
+    document.getElementById('status').textContent = `Готово. Найдено: ${result.length} тикеров (${result.filter(x=>!x._breakout).length} классика, ${result.filter(x=>x._breakout).length} breakout).`;
+    allGainers = result;
+    renderTable(filterDeep(result));
 }
 
 async function updatePrices() {
