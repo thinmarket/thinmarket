@@ -383,6 +383,24 @@ document.getElementById('how-it-works').onclick = function() {
     );
 };
 
+const TRADINGVIEW_TICKER_MAP = {
+    // Пример: 'SBER': 'MOEX:SBERP',
+    // 'GAZP': 'MOEX:GAZP',
+    // 'SiZ5': 'MOEX:SiZ2025',
+    'GLDRUBF': 'MOEX:GLDRUB.P',
+    // Добавляйте свои соответствия ниже
+};
+
+function moexFutureToTV(symbol) {
+    // Пример: SiZ5 → MOEX:SiZ2025
+    const match = symbol.match(/^([A-Z0-9]+)([FGHJKMNQUVXZ])([0-9])$/);
+    if (!match) return null;
+    const base = match[1];
+    const month = match[2];
+    const year = 2020 + parseInt(match[3], 10);
+    return `MOEX:${base}${month}${year}`;
+}
+
 function renderTable(gainers) {
     const tbody = document.getElementById('gainers-table-body');
     tbody.innerHTML = '';
@@ -396,17 +414,28 @@ function renderTable(gainers) {
         const tdTicker = document.createElement('td');
         tdTicker.textContent = g.symbol;
         if (g.type === 'Акция') {
+            let tvSymbol = TRADINGVIEW_TICKER_MAP[g.symbol] || `MOEX:${g.symbol}`;
             tdTicker.className = 'ticker-link';
             tdTicker.title = 'Открыть график на TradingView';
             tdTicker.onclick = () => {
-                let url = `https://www.tradingview.com/chart/?symbol=MOEX:${g.symbol}`;
+                let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
                 window.open(url, '_blank');
             };
-        } else {
-            tdTicker.className = 'ticker-link-disabled';
-            tdTicker.title = 'График недоступен для фьючерсов';
-            tdTicker.style.color = '#888';
-            tdTicker.style.cursor = 'not-allowed';
+        } else if (g.type === 'Фьючерс') {
+            let tvSymbol = TRADINGVIEW_TICKER_MAP[g.symbol] || moexFutureToTV(g.symbol);
+            if (tvSymbol) {
+                tdTicker.className = 'ticker-link';
+                tdTicker.title = 'Открыть график на TradingView';
+                tdTicker.onclick = () => {
+                    let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+                    window.open(url, '_blank');
+                };
+            } else {
+                tdTicker.className = 'ticker-link-disabled';
+                tdTicker.title = 'График недоступен для этого фьючерса';
+                tdTicker.style.color = '#888';
+                tdTicker.style.cursor = 'not-allowed';
+            }
         }
         tr.appendChild(tdTicker);
         // Название
