@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - Bybit Weekly Gainers</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+        }
+        body {
+            background-color: var(--darker-bg);
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1.title {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 800;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        .stocks-table-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .stocks-table th {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            user-select: none;
+        }
+        .stocks-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
+        }
+        .stocks-table tr:last-child td {
+            border-bottom: none;
+        }
+        .stocks-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .ticker-link {
+            color: #888;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .price-green { color: var(--green); font-weight: bold; }
+        .price-red   { color: var(--red); font-weight: bold; }
+        .price-gray  { color: #b0b0b0; font-weight: bold; }
+        .loading {
+            text-align: center;
+            padding: 8px 0;
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+        progress {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 18px;
+            border-radius: 8px;
+            background-color: #222;
+            overflow: hidden;
+        }
+        progress::-webkit-progress-bar {
+            background-color: #222;
+            border-radius: 8px;
+        }
+        progress::-webkit-progress-value {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress::-moz-progress-bar {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        progress[value] {
+            color: var(--green);
+        }
+        progress[value]::-ms-fill {
+            background: linear-gradient(90deg, var(--green), #8BC34A);
+            border-radius: 8px;
+        }
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #444;
+            transition: .3s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--green);
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(76,175,80,0.2);
+        }
+        .switch input:checked + .slider {
+            background: #222;
+        }
+        .switch input:checked + .slider:before {
+            transform: translateX(22px);
+            background: #F44336;
+        }
+        /* Стилизация выпадающего списка типа инструмента */
+        #type-filter {
+            background: #232629;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #type-filter:focus {
+            border: 1.5px solid #8BC34A;
+        }
+        #type-filter option {
+            background: #232629;
+            color: #e0e0e0;
+        }
+        @media (max-width: 900px) {
+            .stocks-table-container { padding: 15px; }
+            .stocks-table th, .stocks-table td { padding: 8px; font-size: 13px; }
+            h1.title { font-size: 28px; }
+        }
+        @media (max-width: 768px) {
+            .header { padding: 15px; }
+            .stocks-table-container { padding: 10px; }
+            h1.title { font-size: 24px; }
+            .back-button { padding: 10px 20px; font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            h1.title { font-size: 18px; }
+            .stocks-table th, .stocks-table td { padding: 6px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="title-container">
+                <h1 class="title">Bybit Weekly Gainers</h1>
+                <span id="how-it-works" style="cursor:pointer;color:#8BC34A;text-decoration:underline;font-size:15px;margin-left:18px;">Как работает?</span>
+            </div>
+            <a href="index.html" class="back-button">← На главную</a>
+        </div>
+    </div>
+    <div class="stocks-table-container">
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <label class="switch-label">
+                <span id="mode-label" style="margin-right:10px;font-weight:bold;font-size:15px;">Режим: Лонг</span>
+                <span class="switch">
+                    <input type="checkbox" id="mode-toggle">
+                    <span class="slider"></span>
+                </span>
+            </label>
+            <label style="font-size:15px;user-select:none;cursor:pointer;">
+                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
+            </label>
+            <select id="type-filter" style="padding:6px 12px;border-radius:8px;font-size:15px;">
+                <option value="all">Все</option>
+                <option value="spot">spot</option>
+                <option value="linear">linear</option>
+            </select>
+            <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+        </div>
+        <div style="margin-bottom:10px;">
+            <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
+        </div>
+        <div id="status" class="loading">Загрузка...</div>
+        <div style="overflow-x: auto;">
+            <table class="stocks-table">
+                <thead>
+                <tr>
+                    <th>Тикер</th>
+                    <th>Тип</th>
+                    <th>Неделя 1</th>
+                    <th>Неделя 2</th>
+                    <th id="highlow-col">Хай недели 2</th>
+                    <th>Текущая цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">обновл. ~10 сек</span></th>
+                </tr>
+                </thead>
+                <tbody id="gainers-table-body">
+                    <tr><td colspan="6" class="loading">Загрузка данных...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<script>
+const BYBIT_SYMBOLS_URL = "https://api.bybit.com/v5/market/instruments-info?category=";
+const BYBIT_KLINE_URL = "https://api.bybit.com/v5/market/kline?category={category}&symbol={symbol}&interval=W&limit=3";
+const BYBIT_TICKERS_URL = "https://api.bybit.com/v5/market/tickers?category=";
+const CATEGORIES = ["spot", "linear"];
+
+let searchMode = 'long'; // 'long' или 'short'
+let allGainers = [];
+let prices = {};
+
+const modeToggle = document.getElementById('mode-toggle');
+const modeLabel = document.getElementById('mode-label');
+const highlowCol = document.getElementById('highlow-col');
+const deepModeToggle = document.getElementById('deep-mode-toggle');
+const typeFilter = document.getElementById('type-filter');
+
+modeToggle.addEventListener('change', () => {
+    searchMode = modeToggle.checked ? 'short' : 'long';
+    modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
+    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+    loadGainers();
+});
+document.addEventListener('DOMContentLoaded', () => {
+    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+});
+deepModeToggle.addEventListener('change', () => {
+    renderTable(filterDeep(allGainers));
+});
+typeFilter.addEventListener('change', () => {
+    renderTable(filterDeep(allGainers));
+});
+document.getElementById('how-it-works').onclick = function() {
+    alert(
+        'Страница ищет тикеры Bybit, которые за последнюю неделю:\n' +
+        '- В режиме Лонг: выросли (цена закрытия недели 2 выше недели 1)\n' +
+        '- В режиме Шорт: упали (цена закрытия недели 2 ниже недели 1)\n' +
+        'В таблице:\n' +
+        '- Можно открыть график на TradingView по тикеру Bybit\n' +
+        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.\n' +
+        '\nГлубокий анализ: фильтрует только те тикеры, где текущая цена выше high недели 2 (лонг) или ниже low недели 2 (шорт).'
+    );
+};
+
+function filterDeep(gainers) {
+    let filtered = gainers;
+    const type = typeFilter.value;
+    if (type !== 'all') {
+        filtered = filtered.filter(g => g.category === type);
+    }
+    if (deepModeToggle.checked) {
+        if (searchMode === 'long') {
+            filtered = filtered.filter(g => g.price !== undefined && g.price > g.high2);
+        } else {
+            filtered = filtered.filter(g => g.price !== undefined && g.price < g.low2);
+        }
+    }
+    return filtered;
+}
+
+function renderTable(gainers) {
+    const tbody = document.getElementById('gainers-table-body');
+    tbody.innerHTML = '';
+    if (!gainers.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">Нет данных для отображения</td></tr>';
+        return;
+    }
+    for (const g of gainers) {
+        const tr = document.createElement('tr');
+        // Тикер (ссылка на TradingView)
+        const tdTicker = document.createElement('td');
+        tdTicker.textContent = g.symbol;
+        tdTicker.className = 'ticker-link';
+        tdTicker.title = 'Открыть график на TradingView';
+        tdTicker.onclick = () => {
+            let tvSymbol = `BYBIT:${g.symbol}`;
+            if (g.category === 'linear') {
+                tvSymbol += '.P';
+            }
+            let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+            window.open(url, '_blank');
+        };
+        tr.appendChild(tdTicker);
+        // Тип
+        const tdType = document.createElement('td');
+        tdType.textContent = g.category;
+        tr.appendChild(tdType);
+        // Неделя 1
+        const tdPrev = document.createElement('td');
+        tdPrev.textContent = g.close1?.toFixed(8) ?? '-';
+        tr.appendChild(tdPrev);
+        // Неделя 2
+        const tdLast = document.createElement('td');
+        tdLast.textContent = g.close2?.toFixed(8) ?? '-';
+        tr.appendChild(tdLast);
+        // Хай/Лоу недели 2
+        const tdHighLow = document.createElement('td');
+        if (searchMode === 'long') {
+            tdHighLow.textContent = g.high2?.toFixed(8) ?? '-';
+        } else {
+            tdHighLow.textContent = g.low2?.toFixed(8) ?? '-';
+        }
+        tr.appendChild(tdHighLow);
+        // Последняя цена
+        const tdPrice = document.createElement('td');
+        if (g.price !== undefined && g.price !== null) {
+            tdPrice.textContent = g.price.toFixed(8);
+            if (searchMode === 'long') {
+                if (g.price > g.high2) tdPrice.className = 'price-green';
+                else if (g.price < g.high2) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            } else {
+                if (g.price < g.low2) tdPrice.className = 'price-green';
+                else if (g.price > g.low2) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            }
+        } else {
+            tdPrice.textContent = '-';
+        }
+        tr.appendChild(tdPrice);
+        tbody.appendChild(tr);
+    }
+}
+
+async function getAllTickers() {
+    let tickers = [];
+    for (const category of CATEGORIES) {
+        const resp = await fetch(BYBIT_SYMBOLS_URL + category);
+        const data = await resp.json();
+        for (const x of data.result.list) {
+            tickers.push({symbol: x.symbol, category});
+        }
+    }
+    return tickers;
+}
+
+async function getLastWeeklyKlines(symbol, category) {
+    const url = BYBIT_KLINE_URL.replace('{category}', category).replace('{symbol}', symbol);
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const klines = data.result?.list || [];
+    if (klines.length < 3) return null;
+    // Bybit API возвращает массив от новой к старой: [0] - текущая, [1] - последняя завершённая, [2] - предпоследняя завершённая
+    const prev = klines[2]; // Неделя 1 (предпоследняя завершённая)
+    const last = klines[1]; // Неделя 2 (последняя завершённая)
+    return {
+        close1: parseFloat(prev[4]),
+        close2: parseFloat(last[4]),
+        high2: parseFloat(last[2]),
+        low2: parseFloat(last[3])
+    };
+}
+
+async function getLastPrices() {
+    let allPrices = {};
+    for (const category of CATEGORIES) {
+        const resp = await fetch(BYBIT_TICKERS_URL + category);
+        const data = await resp.json();
+        for (const ticker of data.result.list) {
+            allPrices[`${ticker.symbol}_${category}`] = parseFloat(ticker.lastPrice);
+        }
+    }
+    return allPrices;
+}
+
+async function loadGainers() {
+    document.getElementById('status').textContent = 'Получаем тикеры...';
+    const tickers = await getAllTickers();
+    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
+    const gainers = [];
+    let checked = 0;
+    const progressBar = document.getElementById('progress-bar');
+    progressBar.style.display = '';
+    progressBar.value = 0;
+    progressBar.max = tickers.length;
+    for (const t of tickers) {
+        const klines = await getLastWeeklyKlines(t.symbol, t.category);
+        if (klines) {
+            if (searchMode === 'long' && klines.close2 > klines.close1) {
+                gainers.push({
+                    symbol: t.symbol,
+                    category: t.category,
+                    close1: klines.close1,
+                    close2: klines.close2,
+                    high2: klines.high2,
+                    low2: klines.low2
+                });
+            } else if (searchMode === 'short' && klines.close2 < klines.close1) {
+                gainers.push({
+                    symbol: t.symbol,
+                    category: t.category,
+                    close1: klines.close1,
+                    close2: klines.close2,
+                    high2: klines.high2,
+                    low2: klines.low2
+                });
+            }
+        }
+        checked++;
+        if (checked % 10 === 0) {
+            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+        }
+        progressBar.value = checked;
+    }
+    progressBar.style.display = 'none';
+    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю. Загружаем последние цены...`;
+    prices = await getLastPrices();
+    for (const g of gainers) {
+        g.price = prices[`${g.symbol}_${g.category}`];
+    }
+    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за две недели. Проверьте продолжение ${(searchMode==='long'?'роста':'падения')} по текущей цене.`;
+    allGainers = gainers;
+    renderTable(filterDeep(gainers));
+}
+
+async function updatePrices() {
+    prices = await getLastPrices();
+    for (const g of allGainers) {
+        g.price = prices[`${g.symbol}_${g.category}`];
+    }
+    renderTable(filterDeep(allGainers));
+}
+
+// Первый запуск
+loadGainers();
+// Кнопка обновления
+const refreshBtn = document.getElementById('refresh-btn');
+refreshBtn.addEventListener('click', () => {
+    loadGainers();
+});
+// Автообновление цен раз в 10 секунд
+setInterval(updatePrices, 10000);
+</script>
+</body>
+</html> 
