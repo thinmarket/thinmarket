@@ -221,6 +221,9 @@
             cursor: not-allowed !important;
             font-weight: bold;
         }
+        .breakout-row {
+            background: rgba(255, 215, 0, 0.18) !important;
+        }
     </style>
 </head>
 <body>
@@ -410,6 +413,7 @@ function renderTable(gainers) {
     }
     for (const g of gainers) {
         const tr = document.createElement('tr');
+        if (g._breakout) tr.classList.add('breakout-row');
         // Тикер (ссылка или неактивная ячейка)
         const tdTicker = document.createElement('td');
         tdTicker.textContent = g.symbol;
@@ -487,57 +491,60 @@ async function loadGainers() {
     document.getElementById('status').textContent = 'Получаем тикеры...';
     const tickers = await getAllTickers();
     document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
-    const gainers = [];
+    const all = [];
     let checked = 0;
-    // Показать прогресс-бар
     const progressBar = document.getElementById('progress-bar');
     progressBar.style.display = '';
     progressBar.value = 0;
     progressBar.max = tickers.length;
     for (const t of tickers) {
         const klines = await getLastWeeklyKlines(t.symbol, t.type);
-        if (klines) {
-            if (searchMode === 'long' && klines.last_close > klines.prev_close) {
-                gainers.push({
-                    symbol: t.symbol,
-                    shortname: t.shortname,
-                    type: t.type,
-                    prev_close: klines.prev_close,
-                    last_close: klines.last_close,
-                    last_high: klines.last_high,
-                    last_low: klines.last_low
-                });
-            } else if (searchMode === 'short' && klines.last_close < klines.prev_close) {
-                gainers.push({
-                    symbol: t.symbol,
-                    shortname: t.shortname,
-                    type: t.type,
-                    prev_close: klines.prev_close,
-                    last_close: klines.last_close,
-                    last_high: klines.last_high,
-                    last_low: klines.last_low
-                });
-            }
-        }
+        if (!klines) continue;
+        all.push({
+            symbol: t.symbol,
+            shortname: t.shortname,
+            type: t.type,
+            prev_close: klines.prev_close,
+            last_close: klines.last_close,
+            last_high: klines.last_high,
+            last_low: klines.last_low
+        });
         checked++;
         if (checked % 10 === 0) {
             document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
         }
         progressBar.value = checked;
     }
-    progressBar.style.display = 'none'; // Скрыть после завершения
-    document.getElementById('status').textContent = `Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за неделю. Загружаем последние цены...`;
-    // Получаем последние цены параллельно
-    await Promise.all(gainers.map(async g => {
+    progressBar.style.display = 'none';
+    document.getElementById('status').textContent = `Загружаем последние цены...`;
+    // Получаем текущие цены для всех
+    await Promise.all(all.map(async g => {
         g.price = await getLastPrice(g.symbol, g.type);
     }));
-    document.getElementById('status').textContent = `Готово. Найдено: ${gainers.length} тикеров с ${(searchMode==='long'?'ростом':'падением')} за две недели. Проверьте продолжение ${(searchMode==='long'?'роста':'падения')} по текущей цене.`;
-    allGainers = gainers;
-    renderTable(gainers);
-    deepModeContainer.style.display = gainers.length ? '' : 'none';
+    // Формируем итоговый список
+    const result = [];
+    for (const g of all) {
+        if (
+            (searchMode === 'long' && g.last_close > g.prev_close) ||
+            (searchMode === 'short' && g.last_close < g.prev_close)
+        ) {
+            // Классика
+            result.push(g);
+        } else if (
+            (searchMode === 'long' && g.price > g.last_high) ||
+            (searchMode === 'short' && g.price < g.last_low)
+        ) {
+            // Breakout
+            g._breakout = true;
+            result.push(g);
+        }
+    }
+    document.getElementById('status').textContent = `Готово. Найдено: ${result.length} тикеров (${result.filter(x=>!x._breakout).length} классика, ${result.filter(x=>x._breakout).length} breakout).`;
+    allGainers = result;
+    renderTable(result);
+    deepModeContainer.style.display = result.length ? '' : 'none';
     deepModeToggle.checked = false;
-    // Сохраняем для автообновления цен
-    window._moexGainers = gainers;
+    window._moexGainers = result;
 }
 
 async function updatePrices() {
