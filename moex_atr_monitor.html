@@ -222,6 +222,24 @@ const CANDLE_URLS = {
     'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json"
 };
 
+// Маппинг месяцев MOEX -> TradingView
+const MONTH_MAP = {
+    'F': '01', 'G': '02', 'H': '03', 'J': '04', 'K': '05', 'M': '06',
+    'N': '07', 'Q': '08', 'U': '09', 'V': '10', 'X': '11', 'Z': '12'
+};
+function moexToTV(symbol) {
+    // Пример: SiZ5 -> Si, Z, 5
+    const match = symbol.match(/^([A-Z0-9]+)([FGHJKMNQUVXZ])(\d)$/);
+    if (!match) return null;
+    const base = match[1];
+    const month = MONTH_MAP[match[2]];
+    if (!month) return null;
+    // Год: 5 -> 2025 (можно сделать 2020 + цифра, но это не универсально)
+    const year = 2020 + parseInt(match[3], 10);
+    // TradingView чаще всего ожидает формат типа SiZ2025
+    return `MOEX:${base}${match[2]}${year}`;
+}
+
 async function getAllTickers() {
     let tickers = [];
     // Акции
@@ -235,7 +253,7 @@ async function getAllTickers() {
     return tickers;
 }
 
-async function getDailyCandles(symbol, ttype, days=8) {
+async function getDailyCandles(symbol, ttype, days=20) { // days с запасом для будущих периодов ATR
     const url = CANDLE_URLS[ttype].replace("{}", symbol);
     const today = new Date();
     const from = new Date(today.getTime() - days*24*60*60*1000);
@@ -251,7 +269,7 @@ async function getDailyCandles(symbol, ttype, days=8) {
 function calcATR(candles, count=7) {
     if (!candles || candles.length < count) return null;
     let sum = 0;
-    for (let i = candles.length-count-1; i < candles.length-1; ++i) {
+    for (let i = candles.length-count; i < candles.length; ++i) {
         const c = candles[i];
         sum += Math.abs(c.high - c.low);
     }
@@ -284,6 +302,8 @@ function assignScores(results) {
 async function main() {
     document.getElementById('status').textContent = 'Загрузка тикеров...';
     const tickers = await getAllTickers();
+    console.log('Всего тикеров:', tickers.length);
+    console.log('Пример фьючерса:', tickers.find(t => t.type === 'Фьючерс'));
     document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров... (это может занять несколько минут)`;
     const results = [];
     let checked = 0;
@@ -295,10 +315,11 @@ async function main() {
     progressBar.max = tickers.length;
     for (const t of tickers) {
         if (t.type === 'Акция') stocksTotal++; else futsTotal++;
-        const candles = await getDailyCandles(t.symbol, t.type);
-        if (!candles || candles.length < 8) { checked++; progressBar.value = checked; continue; }
-        const avgATR = calcATR(candles, 7);
-        const currATR = getCurrentATR(candles);
+        const candles = await getDailyCandles(t.symbol, t.type, 20); // days с запасом
+        if (!candles || candles.length < 7) { checked++; progressBar.value = checked; continue; }
+        const last7 = candles.slice(-7);
+        const avgATR = calcATR(last7, 7);
+        const currATR = getCurrentATR(candles); // по самой последней свече
         if (avgATR && currATR && currATR > avgATR) {
             results.push({
                 symbol: t.symbol,
@@ -351,17 +372,31 @@ function renderTable(data) {
     }
     for (const row of data) {
         const tr = document.createElement('tr');
-        // Тикер как ссылка
+        // Тикер как ссылка или неактивный текст
         const tdTicker = document.createElement('td');
         tdTicker.textContent = row.symbol;
-        tdTicker.className = 'ticker-link';
-        tdTicker.title = 'Открыть в TradingView';
-        tdTicker.onclick = () => {
-            let url = row.type === 'Фьючерс'
-                ? `https://www.tradingview.com/chart/?symbol=MOEX:${row.symbol}1!`
-                : `https://www.tradingview.com/chart/?symbol=MOEX:${row.symbol}`;
-            window.open(url, '_blank');
-        };
+        if (row.type === 'Фьючерс') {
+            const tvSymbol = moexToTV(row.symbol);
+            if (tvSymbol) {
+                tdTicker.className = 'ticker-link';
+                tdTicker.title = 'Открыть в TradingView';
+                tdTicker.onclick = () => {
+                    let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+                    window.open(url, '_blank');
+                };
+            } else {
+                tdTicker.style.color = '#888';
+                tdTicker.style.cursor = 'not-allowed';
+                tdTicker.title = 'График недоступен для фьючерсов';
+            }
+        } else {
+            tdTicker.className = 'ticker-link';
+            tdTicker.title = 'Открыть в TradingView';
+            tdTicker.onclick = () => {
+                let url = `https://www.tradingview.com/chart/?symbol=MOEX:${row.symbol}`;
+                window.open(url, '_blank');
+            };
+        }
         tr.appendChild(tdTicker);
         // Остальные ячейки
         const tdShortname = document.createElement('td');
