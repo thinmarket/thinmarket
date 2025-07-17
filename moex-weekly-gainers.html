@@ -224,6 +224,24 @@
         .breakout-row {
             background: rgba(255, 215, 0, 0.18) !important;
         }
+        /* Стилизация выпадающего списка типа инструмента */
+        #type-filter {
+            background: #232629;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #type-filter:focus {
+            border: 1.5px solid #8BC34A;
+        }
+        #type-filter option {
+            background: #232629;
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -238,6 +256,14 @@
     </div>
     <div class="stocks-table-container">
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <label style="font-size:15px;user-select:none;">Тип:
+                <select id="type-filter" style="padding:6px 12px;border-radius:8px;font-size:15px;">
+                    <option value="all">Все</option>
+                    <option value="Акция">Акция</option>
+                    <option value="Фьючерс">Фьючерс</option>
+                    <option value="Валюта">Валюта</option>
+                </select>
+            </label>
             <label class="switch-label">
                 <span id="mode-label" style="margin-right:10px;font-weight:bold;font-size:15px;">Режим: Лонг</span>
                 <span class="switch">
@@ -278,13 +304,16 @@
 <script>
 const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
 const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+const CETS_TICKERS_URL = "https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
 const CANDLE_URLS = {
     'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}/candles.json",
-    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json"
+    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json",
+    'Валюта': "https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities/{}/candles.json"
 };
 const MARKETDATA_URLS = {
     'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}.json?iss.meta=off",
-    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}.json?iss.meta=off"
+    'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}.json?iss.meta=off",
+    'Валюта': "https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities/{}.json?iss.meta=off"
 };
 
 async function getAllTickers() {
@@ -297,6 +326,12 @@ async function getAllTickers() {
     resp = await fetch(FORTS_TICKERS_URL);
     data = await resp.json();
     tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Фьючерс'})));
+    // Валюта (CETS)
+    try {
+        resp = await fetch(CETS_TICKERS_URL);
+        data = await resp.json();
+        tickers = tickers.concat(data.securities.data.map(x => ({symbol: x[0], shortname: x[1], type: 'Валюта'})));
+    } catch (e) { /* ignore */ }
     return tickers;
 }
 
@@ -373,6 +408,17 @@ function filterDeep(gainers) {
     }
 }
 
+function formatPriceDynamic(val) {
+    if (val === undefined || val === null || isNaN(val)) return '-';
+    const s = val.toString();
+    if (s.indexOf('.') === -1) return val;
+    const dec = s.split('.')[1];
+    if (dec.length === 2) return val.toFixed(2);
+    if (dec.length === 3) return val.toFixed(3);
+    if (dec.length === 4) return val.toFixed(4);
+    return val;
+}
+
 document.getElementById('how-it-works').onclick = function() {
     alert(
         'Страница ищет акции и фьючерсы, которые за последнюю неделю:\n' +
@@ -411,6 +457,15 @@ function renderTable(gainers) {
         tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных для отображения</td></tr>';
         return;
     }
+    // Фильтрация по типу
+    const typeFilter = document.getElementById('type-filter')?.value || 'all';
+    if (typeFilter !== 'all') {
+        gainers = gainers.filter(g => g.type === typeFilter);
+        if (!gainers.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных для выбранного типа</td></tr>';
+            return;
+        }
+    }
     for (const g of gainers) {
         const tr = document.createElement('tr');
         if (g._breakout) tr.classList.add('breakout-row');
@@ -440,6 +495,14 @@ function renderTable(gainers) {
                 tdTicker.style.color = '#888';
                 tdTicker.style.cursor = 'not-allowed';
             }
+        } else if (g.type === 'Валюта') {
+            let tvSymbol = `MOEX:${g.symbol}`;
+            tdTicker.className = 'ticker-link';
+            tdTicker.title = 'Открыть график на TradingView (валюты)';
+            tdTicker.onclick = () => {
+                let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+                window.open(url, '_blank');
+            };
         }
         tr.appendChild(tdTicker);
         // Название
@@ -452,24 +515,24 @@ function renderTable(gainers) {
         tr.appendChild(tdType);
         // Неделя 1
         const tdPrev = document.createElement('td');
-        tdPrev.textContent = g.prev_close?.toFixed(2) ?? '-';
+        tdPrev.textContent = formatPriceDynamic(g.prev_close);
         tr.appendChild(tdPrev);
         // Неделя 2
         const tdLast = document.createElement('td');
-        tdLast.textContent = g.last_close?.toFixed(2) ?? '-';
+        tdLast.textContent = formatPriceDynamic(g.last_close);
         tr.appendChild(tdLast);
         // Хай/Лоу недели 2
         const tdHighLow = document.createElement('td');
         if (searchMode === 'long') {
-            tdHighLow.textContent = g.last_high?.toFixed(2) ?? '-';
+            tdHighLow.textContent = formatPriceDynamic(g.last_high);
         } else {
-            tdHighLow.textContent = g.last_low?.toFixed(2) ?? '-';
+            tdHighLow.textContent = formatPriceDynamic(g.last_low);
         }
         tr.appendChild(tdHighLow);
         // Последняя цена
         const tdPrice = document.createElement('td');
         if (g.price !== undefined && g.price !== null) {
-            tdPrice.textContent = g.price.toFixed(2);
+            tdPrice.textContent = formatPriceDynamic(g.price);
             if (searchMode === 'long') {
                 if (g.price > g.last_high) tdPrice.className = 'price-green';
                 else if (g.price < g.last_high) tdPrice.className = 'price-red';
@@ -501,14 +564,14 @@ async function loadGainers() {
         const klines = await getLastWeeklyKlines(t.symbol, t.type);
         if (!klines) continue;
         all.push({
-            symbol: t.symbol,
-            shortname: t.shortname,
-            type: t.type,
-            prev_close: klines.prev_close,
-            last_close: klines.last_close,
+                symbol: t.symbol,
+                shortname: t.shortname,
+                type: t.type,
+                prev_close: klines.prev_close,
+                last_close: klines.last_close,
             last_high: klines.last_high,
             last_low: klines.last_low
-        });
+            });
         checked++;
         if (checked % 10 === 0) {
             document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
@@ -555,7 +618,7 @@ async function updatePrices() {
     if (deepModeToggle.checked) {
         renderTable(filterDeep(window._moexGainers));
     } else {
-        renderTable(window._moexGainers);
+    renderTable(window._moexGainers);
     }
 }
 
