@@ -406,6 +406,9 @@
                 <a href="moex_atr_monitor.html">
                     <img src="assets/img/buttons/moex_atr_monitor.png" alt="ATR-монитор" class="image-button">
                 </a>
+                <button id="bybit-news-btn" style="background: none; border: none; padding: 0; margin-left: 6px; cursor: pointer; vertical-align: middle;">
+                    <img src="assets/img/buttons/monitoring.png" alt="Новости Bybit" class="image-button" style="filter: hue-rotate(80deg) brightness(1.1);">
+                </button>
             </div>
         </div>
         
@@ -880,6 +883,65 @@
         document.getElementById('converter-to').addEventListener('change', convertCurrency);
 
         window.addEventListener('load', initPanels);
+    </script>
+    <div id="bybit-news-drawer" style="position: fixed; left: 0; right: 0; bottom: -100%; background: #252525; color: #fff; box-shadow: 0 -4px 24px rgba(0,0,0,0.25); border-top-left-radius: 18px; border-top-right-radius: 18px; border-top: 1.5px solid #333; max-height: 70vh; min-height: 200px; z-index: 9999; transition: bottom 0.4s cubic-bezier(.4,1.4,.6,1); overflow-y: auto; padding: 0;">
+        <div style="padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight:bold; font-size:1.1em; color:#8BC34A;">Листинги Bybit</span>
+            <button id="bybit-news-close" style="background:none;border:none;color:#fff;font-size:1.5em;cursor:pointer;">×</button>
+        </div>
+        <div id="bybit-news-content" style="padding: 0 18px 18px 18px;">
+            <div style="text-align:center;color:#aaa;">Загрузка новостей...</div>
+        </div>
+    </div>
+    <script>
+    document.getElementById('bybit-news-btn').onclick = function(e) {
+        e.preventDefault();
+        const drawer = document.getElementById('bybit-news-drawer');
+        drawer.style.bottom = '0';
+        loadBybitNews();
+    };
+    document.getElementById('bybit-news-close').onclick = function() {
+        document.getElementById('bybit-news-drawer').style.bottom = '-100%';
+    };
+
+    async function loadBybitNews() {
+        const root = document.getElementById('bybit-news-content');
+        root.innerHTML = '<div style="text-align:center;color:#aaa;">Загрузка новостей...</div>';
+        try {
+            const resp = await fetch('https://api.bybit.com/v5/announcements/index?locale=ru-RU&limit=20');
+            const data = await resp.json();
+            if (!data.result || !data.result.list || !data.result.list.length) {
+                root.innerHTML = '<div style="text-align:center;color:#aaa;">Нет новостей</div>';
+                return;
+            }
+            const news = data.result.list.filter(
+                ann => ann.type && (ann.type.key === 'new_crypto' || ann.type.key === 'delisting')
+            );
+            news.sort((a, b) => (b.dateTimestamp || b.publishTime || 0) - (a.dateTimestamp || a.publishTime || 0));
+            if (!news.length) {
+                root.innerHTML = '<div style="text-align:center;color:#aaa;">Нет свежих листингов или делистингов</div>';
+                return;
+            }
+            let html = '<ul style="list-style:none;padding:0;margin:0;">';
+            for (const ann of news) {
+                const dt = new Date(ann.dateTimestamp || ann.publishTime || 0);
+                html += `
+                    <li style="background:#252525;border-radius:8px;margin-bottom:14px;padding:12px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
+                        <div style="font-size:0.95em;color:#b0b0b0;margin-bottom:4px;">
+                            ${dt.toLocaleString('ru-RU', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}
+                        </div>
+                        <div style="font-size:1.08em;font-weight:bold;margin-bottom:4px;color:#fff;">${ann.title}</div>
+                        <div style="font-size:1em;color:#e0e0e0;margin-bottom:6px;">${ann.description}</div>
+                        <a href="${ann.url}" target="_blank" style="color:#8BC34A;text-decoration:underline;font-size:0.98em;">Подробнее</a>
+                    </li>
+                `;
+            }
+            html += '</ul>';
+            root.innerHTML = html;
+        } catch (e) {
+            root.innerHTML = '<div style="text-align:center;color:#aaa;">Ошибка загрузки новостей</div>';
+        }
+    }
     </script>
 </body>
 </html>
