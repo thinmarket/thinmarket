@@ -253,15 +253,17 @@
                     <span class="slider"></span>
                 </span>
             </label>
-            <label style="font-size:15px;user-select:none;cursor:pointer;">
-                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
-            </label>
             <select id="type-filter" style="padding:6px 12px;border-radius:8px;font-size:15px;">
                 <option value="all">Все</option>
                 <option value="spot">spot</option>
                 <option value="linear">linear</option>
             </select>
             <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+        </div>
+        <div id="deep-mode-container" style="display:none;margin-bottom:10px;">
+            <label style="font-size:15px;user-select:none;cursor:pointer;">
+                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
+            </label>
         </div>
         <div style="margin-bottom:10px;">
             <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
@@ -349,8 +351,10 @@ function renderTable(gainers) {
     tbody.innerHTML = '';
     if (!gainers.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="loading">Нет данных для отображения</td></tr>';
+        document.getElementById('deep-mode-container').style.display = 'none';
         return;
     }
+    document.getElementById('deep-mode-container').style.display = '';
     for (const g of gainers) {
         const tr = document.createElement('tr');
         if (g._breakout) tr.classList.add('breakout-row');
