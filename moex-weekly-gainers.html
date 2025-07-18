@@ -15,7 +15,7 @@
             --card-bg: rgba(30, 30, 30, 0.8);
         }
         body {
-            background-color: var(--darker-bg);
+            background-color: #121212;
             color: var(--text);
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -242,6 +242,89 @@
             background: #232629;
             color: #e0e0e0;
         }
+        /* --- Новые стили для компактных иконок-кнопок --- */
+        .table-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .action-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #232629 60%, #8BC34A 100%);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8BC34A;
+            font-size: 20px;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            position: relative;
+        }
+        .action-btn:hover, .action-btn:focus {
+            background: linear-gradient(135deg, #8BC34A 60%, #232629 100%);
+            color: #fff;
+        }
+        .action-tooltip {
+            display: none;
+            position: absolute;
+            top: 44px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #232629;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px #0007;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .action-btn.show-tooltip .action-tooltip {
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .back-button, #change-choice-btn, #refresh-btn {
+                display: none !important;
+            }
+            .table-actions {
+                top: 8px;
+                right: 8px;
+                gap: 7px;
+            }
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 17px;
+            }
+            .action-tooltip {
+                font-size: 13px;
+                padding: 5px 10px;
+            }
+        }
+        #refresh-btn {
+            display: none !important;
+        }
+        #change-choice-btn {
+            display: none !important;
+        }
+        #start-dialog > div {
+            background: #232629 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 24px #000a !important;
+            color: #e0e0e0 !important;
+        }
+        #start-dialog h2 {
+            color: #8BC34A !important;
+        }
+        #start-dialog label, #start-dialog select, #start-dialog button, #start-dialog div, #start-dialog {
+            color: #e0e0e0 !important;
+        }
     </style>
 </head>
 <body>
@@ -271,7 +354,16 @@
                     <span class="slider"></span>
                 </span>
             </label>
-            <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
+            <div class="table-actions">
+                <button id="mini-refresh-btn" class="action-btn" tabindex="0" aria-label="Обновить список">
+                    <span>⟳</span>
+                    <span class="action-tooltip">Обновить список</span>
+                </button>
+                <button id="mini-change-choice-btn" class="action-btn" tabindex="0" aria-label="Изменить выбор">
+                    <span>⇄</span>
+                    <span class="action-tooltip">Изменить выбор</span>
+                </button>
+            </div>
         </div>
         <div style="margin-bottom:10px;">
             <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
@@ -289,10 +381,7 @@
                     <th>Тикер</th>
                     <th>Название</th>
                     <th>Тип</th>
-                    <th>Неделя 1</th>
-                    <th>Неделя 2</th>
-                    <th id="highlow-col">Хай недели 2</th>
-                    <th>Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span></th>
+                    <!-- Остальные колонки формируются динамически через updateTableHeader() -->
                 </tr>
                 </thead>
                 <tbody id="gainers-table-body">
@@ -301,6 +390,28 @@
             </table>
         </div>
     </div>
+<!-- Диалог выбора направления и условий -->
+<div id="start-dialog" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(18,18,18,0.98);z-index:1000;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#232629;padding:32px 28px 24px 28px;border-radius:18px;box-shadow:0 8px 32px #000a;min-width:320px;max-width:90vw;">
+    <h2 style="margin-top:0;text-align:center;font-size:22px;">Выберите направление</h2>
+    <div style="display:flex;gap:18px;justify-content:center;margin-bottom:18px;">
+      <button id="long-btn" style="padding:12px 32px;font-size:17px;font-weight:bold;border-radius:12px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;cursor:pointer;">Лонг</button>
+      <button id="short-btn" style="padding:12px 32px;font-size:17px;font-weight:bold;border-radius:12px;border:none;background:linear-gradient(90deg,#F44336,#e57373);color:#fff;cursor:pointer;">Шорт</button>
+    </div>
+    <div id="condition-block" style="display:none;margin-bottom:18px;">
+      <label for="condition-select" style="font-size:16px;">Выберите условие:</label><br>
+      <select id="condition-select" style="margin-top:8px;width:100%;padding:8px 12px;font-size:16px;border-radius:8px;background:#181a1b;color:#fff;border:1px solid #444;">
+        <!-- Опции будут добавлены динамически -->
+      </select>
+    </div>
+    <div id="condition-details" style="margin-top:10px;font-size:15px;color:#8BC34A;min-height:40px;"></div>
+    <div style="text-align:center;">
+      <button id="start-btn" style="padding:10px 28px;font-size:16px;font-weight:bold;border-radius:10px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;cursor:pointer;display:none;">Показать</button>
+    </div>
+  </div>
+</div>
+<!-- Кнопка "Изменить выбор" -->
+<button id="change-choice-btn" style="display:none;position:fixed;top:22px;right:22px;z-index:1100;padding:10px 22px;font-size:15px;font-weight:bold;border-radius:10px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;box-shadow:0 2px 8px #0005;cursor:pointer;">Изменить выбор</button>
 <script>
 const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
 const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
@@ -373,23 +484,43 @@ async function getLastPrice(symbol, ttype) {
     return val !== null ? parseFloat(val) : null;
 }
 
+async function getWeeklyKlines(symbol, ttype, weeks) {
+    // Получить N недельных свечей
+    const url = CANDLE_URLS[ttype].replace("{}", symbol);
+    const today = new Date();
+    const from = new Date(today.getTime() - weeks*7*24*60*60*1000);
+    const params = `?interval=7&from=${from.toISOString().slice(0,10)}&till=${today.toISOString().slice(0,10)}`;
+    const resp = await fetch(url + params);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const candles = data.candles?.data || [];
+    const columns = data.candles?.columns || [];
+    return {candles, columns};
+}
+
 let searchMode = 'long'; // 'long' или 'short'
 let allGainers = []; // для хранения полного списка
 
 const modeToggle = document.getElementById('mode-toggle');
 const modeLabel = document.getElementById('mode-label');
-const highlowCol = document.getElementById('highlow-col');
 const deepModeContainer = document.getElementById('deep-mode-container');
 const deepModeToggle = document.getElementById('deep-mode-toggle');
 modeToggle.addEventListener('change', () => {
     searchMode = modeToggle.checked ? 'short' : 'long';
-    modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
-    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+    if (modeLabel) modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Шорт';
+    userDirection = searchMode;
+    showConditionOptions(userDirection);
+    if (typeof userCondition === 'number') conditionSelect.value = userCondition;
+    updateConditionDetails();
+    // Сброс таблицы и статуса при смене режима
+    const tbody = document.getElementById('gainers-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading">Загрузка данных...</td></tr>';
+    if (document.getElementById('status')) document.getElementById('status').textContent = 'Загрузка...';
+    console.log('[ТУМБЛЕР] Переключено на', searchMode, 'условие:', userCondition);
     loadGainers();
 });
 // При первой загрузке тоже выставляем правильное название
 document.addEventListener('DOMContentLoaded', () => {
-    highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
 });
 
 deepModeToggle.addEventListener('change', () => {
@@ -401,6 +532,10 @@ deepModeToggle.addEventListener('change', () => {
 });
 
 function filterDeep(gainers) {
+    if (userCondition === 2) {
+        // Только тикеры с полными данными за 6 месяцев
+        return gainers.filter(g => (g.data_weeks && g.data_weeks >= 24) || (g.data_months && g.data_months >= 6));
+    }
     if (searchMode === 'long') {
         return gainers.filter(g => g.price !== undefined && g.price > g.last_high);
     } else {
@@ -409,7 +544,7 @@ function filterDeep(gainers) {
 }
 
 function formatPriceDynamic(val) {
-    if (val === undefined || val === null || isNaN(val)) return '-';
+    if (val === undefined || val === null || isNaN(val) || val === 0) return '-';
     const s = val.toString();
     if (s.indexOf('.') === -1) return val;
     const dec = s.split('.')[1];
@@ -420,16 +555,7 @@ function formatPriceDynamic(val) {
 }
 
 document.getElementById('how-it-works').onclick = function() {
-    alert(
-        'Страница ищет акции и фьючерсы, которые за последнюю неделю:\n' +
-        '- В режиме Лонг: выросли (цена закрытия недели 2 выше недели 1)\n' +
-        '- В режиме Шорт: упали (цена закрытия недели 2 ниже недели 1)\n' +
-        'В таблице:\n' +
-        '- Для акций можно открыть график на TradingView\n' +
-        '- Для фьючерсов график недоступен\n' +
-        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.\n' +
-        '\nГлубокий анализ: фильтрует только те тикеры, где текущая цена выше high недели 2 (лонг) или ниже low недели 2 (шорт).'
-    );
+    window.open('how-it-works.html', '_blank');
 };
 
 const TRADINGVIEW_TICKER_MAP = {
@@ -450,11 +576,66 @@ function moexFutureToTV(symbol) {
     return `MOEX:${base}${month}${year}`;
 }
 
+function updateTableHeader() {
+    const thead = document.querySelector('.stocks-table thead');
+    if (!thead) return;
+    // Удаляем старый tr
+    while (thead.firstChild) thead.removeChild(thead.firstChild);
+    // Создаём новый tr
+    const tr = document.createElement('tr');
+    // Базовые колонки
+    const thTicker = document.createElement('th'); thTicker.textContent = 'Тикер'; tr.appendChild(thTicker);
+    const thName = document.createElement('th'); thName.textContent = 'Название'; tr.appendChild(thName);
+    const thType = document.createElement('th'); thType.textContent = 'Тип'; tr.appendChild(thType);
+    // Динамические колонки
+    if (userCondition === 2) {
+        const thExtremum = document.createElement('th');
+        thExtremum.textContent = userDirection === 'long' ? 'Макс. хай за период' : 'Мин. лоу за период';
+        tr.appendChild(thExtremum);
+        const thLast = document.createElement('th');
+        thLast.textContent = 'Закрытие недели 2';
+        tr.appendChild(thLast);
+        const thPrice = document.createElement('th');
+        thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span>';
+        tr.appendChild(thPrice);
+        const thComment = document.createElement('th');
+        thComment.textContent = 'Комментарий';
+        tr.appendChild(thComment);
+    } else if (userCondition === 1 && userDirection === 'long') {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thHigh1 = document.createElement('th'); thHigh1.textContent = 'Хай недели 1'; tr.appendChild(thHigh1);
+        const thHigh2 = document.createElement('th'); thHigh2.textContent = 'Хай недели 2'; tr.appendChild(thHigh2);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span>'; tr.appendChild(thPrice);
+    } else if (userCondition === 1 && userDirection === 'short') {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thLow1 = document.createElement('th'); thLow1.textContent = 'Лоу недели 1'; tr.appendChild(thLow1);
+        const thLow2 = document.createElement('th'); thLow2.textContent = 'Лоу недели 2'; tr.appendChild(thLow2);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span>'; tr.appendChild(thPrice);
+    } else {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thHighLow = document.createElement('th'); thHighLow.textContent = userDirection === 'long' ? 'Хай недели 2' : 'Лоу недели 2'; tr.appendChild(thHighLow);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span>'; tr.appendChild(thPrice);
+    }
+    thead.appendChild(tr);
+}
+
+// Вызов обновления заголовка при каждом рендере таблицы
 function renderTable(gainers) {
+    updateTableHeader();
     const tbody = document.getElementById('gainers-table-body');
     tbody.innerHTML = '';
+    const thCount = document.querySelectorAll('.stocks-table thead th').length;
     if (!gainers.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных для отображения</td></tr>';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = thCount;
+        td.className = 'loading';
+        td.textContent = 'Нет данных для отображения';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
         return;
     }
     // Фильтрация по типу
@@ -462,7 +643,13 @@ function renderTable(gainers) {
     if (typeFilter !== 'all') {
         gainers = gainers.filter(g => g.type === typeFilter);
         if (!gainers.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных для выбранного типа</td></tr>';
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = thCount;
+            td.className = 'loading';
+            td.textContent = 'Нет данных для выбранного типа';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
             return;
         }
     }
@@ -513,101 +700,298 @@ function renderTable(gainers) {
         const tdType = document.createElement('td');
         tdType.textContent = g.type;
         tr.appendChild(tdType);
-        // Неделя 1
-        const tdPrev = document.createElement('td');
-        tdPrev.textContent = formatPriceDynamic(g.prev_close);
-        tr.appendChild(tdPrev);
-        // Неделя 2
-        const tdLast = document.createElement('td');
-        tdLast.textContent = formatPriceDynamic(g.last_close);
-        tr.appendChild(tdLast);
-        // Хай/Лоу недели 2
-        const tdHighLow = document.createElement('td');
-        if (searchMode === 'long') {
-            tdHighLow.textContent = formatPriceDynamic(g.last_high);
+        if (userCondition === 2) {
+            // Только нужные колонки
+            const tdExtremum = document.createElement('td');
+            tdExtremum.textContent = formatPriceDynamic(g.extremum);
+            tdExtremum.style.fontWeight = 'bold';
+            tr.appendChild(tdExtremum);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = formatPriceDynamic(g.last_close);
+            tr.appendChild(tdLast);
+            const tdPrice = document.createElement('td');
+            tdPrice.textContent = formatPriceDynamic(g.price);
+            if (g._breakout) tdPrice.className = 'price-green';
+            tr.appendChild(tdPrice);
+            const tdComment = document.createElement('td');
+            if ((g.data_weeks && g.data_weeks >= 24) || (g.data_months && g.data_months >= 6)) {
+                tdComment.textContent = 'Данные за 6 мес.';
+            } else if (g.data_weeks && g.data_weeks < 24) {
+                tdComment.textContent = `Данные только за ${g.data_weeks} недель`;
+            } else if (g.data_months && g.data_months < 6) {
+                tdComment.textContent = `Данные только за ${g.data_months} мес.`;
+            } else {
+                tdComment.textContent = '';
+            }
+            tr.appendChild(tdComment);
+        } else if (userCondition === 1 && userDirection === 'long') {
+            // Breakout по high недели 1
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = formatPriceDynamic(g.prev_close);
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = formatPriceDynamic(g.last_close);
+            tr.appendChild(tdLast);
+            const tdHigh1 = document.createElement('td');
+            tdHigh1.textContent = formatPriceDynamic(g.high1);
+            tdHigh1.style.fontWeight = 'bold';
+            tr.appendChild(tdHigh1);
+            const tdHigh2 = document.createElement('td');
+            tdHigh2.textContent = formatPriceDynamic(g.last_high);
+            tr.appendChild(tdHigh2);
+        } else if (userCondition === 1 && userDirection === 'short') {
+            // Breakout по low недели 1
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = formatPriceDynamic(g.prev_close);
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = formatPriceDynamic(g.last_close);
+            tr.appendChild(tdLast);
+            const tdLow1 = document.createElement('td');
+            tdLow1.textContent = formatPriceDynamic(g.low1);
+            tdLow1.style.fontWeight = 'bold';
+            tr.appendChild(tdLow1);
+            const tdLow2 = document.createElement('td');
+            tdLow2.textContent = formatPriceDynamic(g.last_low);
+            tr.appendChild(tdLow2);
         } else {
-            tdHighLow.textContent = formatPriceDynamic(g.last_low);
+            // Классика
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = formatPriceDynamic(g.prev_close);
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = formatPriceDynamic(g.last_close);
+            tr.appendChild(tdLast);
+            const tdHighLow = document.createElement('td');
+            tdHighLow.textContent = userDirection === 'long' ? formatPriceDynamic(g.last_high) : formatPriceDynamic(g.last_low);
+            tr.appendChild(tdHighLow);
         }
-        tr.appendChild(tdHighLow);
         // Последняя цена
         const tdPrice = document.createElement('td');
         if (g.price !== undefined && g.price !== null) {
             tdPrice.textContent = formatPriceDynamic(g.price);
-            if (searchMode === 'long') {
-                if (g.price > g.last_high) tdPrice.className = 'price-green';
-                else if (g.price < g.last_high) tdPrice.className = 'price-red';
+            if (userCondition === 2) {
+                // 6 месяцев: сравниваем с экстремумом
+                if ((userDirection === 'long' && g.price > g.extremum) || (userDirection === 'short' && g.price < g.extremum)) {
+                    tdPrice.className = 'price-green';
+                } else {
+                    tdPrice.className = 'price-red';
+                }
+            } else if (userCondition === 1 && userDirection === 'long') {
+                if (g.price > g.high1) tdPrice.className = 'price-green';
+                else if (g.price < g.high1) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            } else if (userCondition === 1 && userDirection === 'short') {
+                if (g.price < g.low1) tdPrice.className = 'price-green';
+                else if (g.price > g.low1) tdPrice.className = 'price-red';
                 else tdPrice.className = 'price-gray';
             } else {
-                if (g.price < g.last_low) tdPrice.className = 'price-green';
-                else if (g.price > g.last_low) tdPrice.className = 'price-red';
-                else tdPrice.className = 'price-gray';
+                if (userDirection === 'long') {
+                    if (g.price > g.last_high) tdPrice.className = 'price-green';
+                    else if (g.price < g.last_high) tdPrice.className = 'price-red';
+                    else tdPrice.className = 'price-gray';
+                } else {
+                    if (g.price < g.last_low) tdPrice.className = 'price-green';
+                    else if (g.price > g.last_low) tdPrice.className = 'price-red';
+                    else tdPrice.className = 'price-gray';
+                }
             }
         } else {
             tdPrice.textContent = '-';
         }
         tr.appendChild(tdPrice);
+        // После формирования строки выравниваем количество td
+        while (tr.children.length < thCount) tr.appendChild(document.createElement('td'));
+        while (tr.children.length > thCount) tr.removeChild(tr.lastChild);
         tbody.appendChild(tr);
     }
 }
 
 async function loadGainers() {
-    document.getElementById('status').textContent = 'Получаем тикеры...';
+    console.log('[loadGainers] userDirection:', userDirection, 'userCondition:', userCondition, 'searchMode:', searchMode);
+    if (document.getElementById('status')) document.getElementById('status').textContent = 'Получаем тикеры...';
     const tickers = await getAllTickers();
-    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
+    if (document.getElementById('status')) document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
     const all = [];
-    let checked = 0;
+    let checked = 0, found = 0, skipped = 0;
     const progressBar = document.getElementById('progress-bar');
     progressBar.style.display = '';
     progressBar.value = 0;
     progressBar.max = tickers.length;
-    for (const t of tickers) {
-        const klines = await getLastWeeklyKlines(t.symbol, t.type);
-        if (!klines) continue;
-        all.push({
-                symbol: t.symbol,
-                shortname: t.shortname,
-                type: t.type,
-                prev_close: klines.prev_close,
-                last_close: klines.last_close,
-            last_high: klines.last_high,
-            last_low: klines.last_low
-            });
-        checked++;
-        if (checked % 10 === 0) {
-            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+    if (userCondition === 2) { // 6 месяцев
+        const batchSize = 6;
+        for (let i = 0; i < tickers.length; i += batchSize) {
+            const batch = tickers.slice(i, i + batchSize);
+            await Promise.all(batch.map(async t => {
+                let g = { symbol: t.symbol, shortname: t.shortname, type: t.type };
+                const klines = await getWeeklyKlines(t.symbol, t.type, 26);
+                if (!klines || klines.candles.length < 2) { skipped++; checked++; return; }
+                const {candles, columns} = klines;
+                // Последняя закрытая неделя (предпоследняя свеча)
+                const lastIdx = candles.length - 2;
+                if (lastIdx < 0) { skipped++; checked++; return; }
+                const last = Object.fromEntries(columns.map((k,i)=>[k,candles[lastIdx][i]]));
+                g.last_close = parseFloat(last.close);
+                // Экстремум за доступный период
+                let months = Math.round(candles.length / 4.33);
+                g.data_months = months;
+                if (userDirection === 'long') {
+                    let maxHigh = Math.max(...candles.slice(0, lastIdx+1).map(c=>c[columns.indexOf('high')]));
+                    g.extremum = maxHigh;
+                    // Получаем текущую цену
+                    g.price = await getLastPrice(g.symbol, g.type);
+                    if (g.last_close > maxHigh) {
+                        all.push(g); found++;
+                    } else if (g.price > maxHigh) {
+                        g._breakout = true;
+                        all.push(g); found++;
+                    }
+                } else {
+                    let minLow = Math.min(...candles.slice(0, lastIdx+1).map(c=>c[columns.indexOf('low')]));
+                    g.extremum = minLow;
+                    g.price = await getLastPrice(g.symbol, g.type);
+                    if (g.last_close < minLow) {
+                        all.push(g); found++;
+                    } else if (g.price < minLow) {
+                        g._breakout = true;
+                        all.push(g); found++;
+                    }
+                }
+                checked++;
+            }));
+            progressBar.value = checked;
+            if (document.getElementById('status')) document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}, найдено: ${found}, пропущено: ${skipped}`;
         }
-        progressBar.value = checked;
+    } else if (userCondition === 0) { // Классика с breakout
+        for (const t of tickers) {
+            let g = { symbol: t.symbol, shortname: t.shortname, type: t.type };
+            const klines = await getLastWeeklyKlines(t.symbol, t.type);
+            if (!klines) { skipped++; checked++; continue; }
+            g.prev_close = klines.prev_close;
+            g.last_close = klines.last_close;
+            g.last_high = klines.last_high;
+            g.last_low = klines.last_low;
+            let isClassic = false, isBreakout = false;
+            if (userDirection === 'long') {
+                if (g.last_close > g.prev_close) {
+                    isClassic = true;
+                } else {
+                    // breakout по текущей цене выше high недели 2
+                    g.price = await getLastPrice(g.symbol, g.type);
+                    if (g.price > g.last_high) {
+                        isBreakout = true;
+                    }
+                }
+            } else {
+                if (g.last_close < g.prev_close) {
+                    isClassic = true;
+                } else {
+                    // breakout по текущей цене ниже low недели 2
+                    g.price = await getLastPrice(g.symbol, g.type);
+                    if (g.price < g.last_low) {
+                        isBreakout = true;
+                    }
+                }
+            }
+            if (isClassic) {
+                all.push(g); found++;
+            } else if (isBreakout) {
+                g._breakout = true;
+                all.push(g); found++;
+            }
+            checked++;
+            progressBar.value = checked;
+            if (document.getElementById('status')) document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}, найдено: ${found}, пропущено: ${skipped}`;
+        }
+    } else if (userCondition === 1) { // Breakout по high/low недели 1
+        for (const t of tickers) {
+            let g = { symbol: t.symbol, shortname: t.shortname, type: t.type };
+            const klines = await getLastWeeklyKlines(t.symbol, t.type);
+            if (!klines) { skipped++; checked++; continue; }
+            g.prev_close = klines.prev_close;
+            g.last_close = klines.last_close;
+            g.last_high = klines.last_high;
+            g.last_low = klines.last_low;
+            // Получаем high/low недели 1 (две свечи назад)
+            const url = CANDLE_URLS[t.type].replace("{}", t.symbol);
+            const today = new Date();
+            const from = new Date(today.getTime() - 30*24*60*60*1000);
+            const params = `?interval=7&from=${from.toISOString().slice(0,10)}&till=${today.toISOString().slice(0,10)}`;
+            const resp = await fetch(url + params);
+            if (!resp.ok) { skipped++; checked++; continue; }
+            const data = await resp.json();
+            const candles = data.candles?.data || [];
+            const columns = data.candles?.columns || [];
+            if (candles.length >= 3) {
+                if (userDirection === 'long') {
+                    const high1 = parseFloat(candles[candles.length-3][columns.indexOf('high')]);
+                    g.high1 = high1;
+                    let isClassic = false, isBreakout = false;
+                    if (g.last_close > high1) {
+                        isClassic = true;
+                    } else {
+                        g.price = await getLastPrice(g.symbol, g.type);
+                        if (g.price > high1) {
+                            isBreakout = true;
+                        }
+                    }
+                    if (isClassic) {
+                        all.push(g); found++;
+                    } else if (isBreakout) {
+                        g._breakout = true;
+                        all.push(g); found++;
+                    }
+                } else {
+                    const low1 = parseFloat(candles[candles.length-3][columns.indexOf('low')]);
+                    g.low1 = low1;
+                    let isClassic = false, isBreakout = false;
+                    if (g.last_close < low1) {
+                        isClassic = true;
+                    } else {
+                        g.price = await getLastPrice(g.symbol, g.type);
+                        if (g.price < low1) {
+                            isBreakout = true;
+                        }
+                    }
+                    if (isClassic) {
+                        all.push(g); found++;
+                    } else if (isBreakout) {
+                        g._breakout = true;
+                        all.push(g); found++;
+                    }
+                }
+            } else { skipped++; }
+            checked++;
+            progressBar.value = checked;
+            if (document.getElementById('status')) document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}, найдено: ${found}, пропущено: ${skipped}`;
+        }
+    }
+    // Получаем текущие цены для всех
+    let priceChecked = 0;
+    if (document.getElementById('status')) document.getElementById('status').textContent = `Загружаем цены: 0/${all.length}`;
+    const priceBatch = 10;
+    for (let i = 0; i < all.length; i += priceBatch) {
+        const batch = all.slice(i, i + priceBatch);
+        await Promise.all(batch.map(async g => {
+            g.price = await getLastPrice(g.symbol, g.type);
+            priceChecked++;
+        }));
+        if (document.getElementById('status')) document.getElementById('status').textContent = `Загружаем цены: ${Math.min(priceChecked, all.length)}/${all.length}`;
+        progressBar.value = checked + Math.round((priceChecked/all.length)*tickers.length);
+        renderTable(all); // Живое обновление
     }
     progressBar.style.display = 'none';
-    document.getElementById('status').textContent = `Загружаем последние цены...`;
-    // Получаем текущие цены для всех
-    await Promise.all(all.map(async g => {
-        g.price = await getLastPrice(g.symbol, g.type);
-    }));
-    // Формируем итоговый список
-    const result = [];
-    for (const g of all) {
-        if (
-            (searchMode === 'long' && g.last_close > g.prev_close) ||
-            (searchMode === 'short' && g.last_close < g.prev_close)
-        ) {
-            // Классика
-            result.push(g);
-        } else if (
-            (searchMode === 'long' && g.price > g.last_high) ||
-            (searchMode === 'short' && g.price < g.last_low)
-        ) {
-            // Breakout
-            g._breakout = true;
-            result.push(g);
-        }
+    if (all.length === 0) {
+        if (document.getElementById('status')) document.getElementById('status').textContent = 'Нет данных для отображения';
+    } else {
+        if (document.getElementById('status')) document.getElementById('status').textContent = `Готово. Найдено: ${all.length} тикеров.`;
     }
-    document.getElementById('status').textContent = `Готово. Найдено: ${result.length} тикеров (${result.filter(x=>!x._breakout).length} классика, ${result.filter(x=>x._breakout).length} breakout).`;
-    allGainers = result;
-    renderTable(result);
-    deepModeContainer.style.display = result.length ? '' : 'none';
+    allGainers = all;
+    renderTable(all);
+    document.querySelector('.stocks-table-container').style.display = '';
+    deepModeContainer.style.display = all.length ? '' : 'none';
     deepModeToggle.checked = false;
-    window._moexGainers = result;
+    window._moexGainers = all;
 }
 
 async function updatePrices() {
@@ -622,6 +1006,124 @@ async function updatePrices() {
     }
 }
 
+// --- Диалог выбора направления и условий ---
+const startDialog = document.getElementById('start-dialog');
+const longBtn = document.getElementById('long-btn');
+const shortBtn = document.getElementById('short-btn');
+const conditionBlock = document.getElementById('condition-block');
+const conditionSelect = document.getElementById('condition-select');
+const startBtn = document.getElementById('start-btn');
+const changeChoiceBtn = document.getElementById('change-choice-btn');
+
+let userDirection = null; // 'long' или 'short'
+let userCondition = null; // 0, 1, 2
+
+const CONDITIONS = {
+  long: [
+    'Классика: сравниваем закрытия двух недель, breakout по high недели 2',
+    'Breakout по high недели 1',
+    'Breakout по максимальному high за 6 месяцев'
+  ],
+  short: [
+    'Классика: сравниваем закрытия двух недель, breakout по low недели 2',
+    'Breakout по low недели 1',
+    'Breakout по минимальному low за 6 месяцев'
+  ]
+};
+
+const CONDITION_DETAILS = {
+  long: [
+    'В список попадают тикеры, где закрытие недели 2 выше недели 1. Если не прошло по закрытию, но текущая цена выше high недели 2 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 выше high недели 1. Если не прошло по закрытию, но текущая цена выше high недели 1 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 выше максимального high за 6 месяцев. Если не прошло по закрытию, но текущая цена выше максимального high за 6 месяцев — тикер выделяется жёлтым (breakout).'
+  ],
+  short: [
+    'В список попадают тикеры, где закрытие недели 2 ниже недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 2 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 ниже low недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 1 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 ниже минимального low за 6 месяцев. Если не прошло по закрытию, но текущая цена ниже минимального low за 6 месяцев — тикер выделяется жёлтым (breakout).'
+  ]
+};
+
+function showConditionOptions(direction) {
+  conditionSelect.innerHTML = '';
+  CONDITIONS[direction].forEach((text, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = text;
+    conditionSelect.appendChild(opt);
+  });
+  conditionBlock.style.display = '';
+  startBtn.style.display = '';
+}
+
+let conditionDetailsDiv = document.getElementById('condition-details');
+if (!conditionDetailsDiv) {
+  conditionDetailsDiv = document.createElement('div');
+  conditionDetailsDiv.id = 'condition-details';
+  conditionDetailsDiv.style = 'margin-top:10px;font-size:15px;color:#8BC34A;min-height:40px;';
+  conditionBlock.appendChild(conditionDetailsDiv);
+}
+function updateConditionDetails() {
+  if (userDirection && typeof userCondition === 'number') {
+    conditionDetailsDiv.textContent = CONDITION_DETAILS[userDirection][userCondition];
+  } else {
+    conditionDetailsDiv.textContent = '';
+  }
+}
+
+longBtn.onclick = () => {
+  userDirection = 'long';
+  showConditionOptions('long');
+  userCondition = 0;
+  conditionSelect.value = 0;
+  updateConditionDetails();
+};
+shortBtn.onclick = () => {
+  userDirection = 'short';
+  showConditionOptions('short');
+  userCondition = 0;
+  conditionSelect.value = 0;
+  updateConditionDetails();
+};
+conditionSelect.onchange = () => {
+  userCondition = parseInt(conditionSelect.value);
+  updateConditionDetails();
+};
+startBtn.onclick = () => {
+  userCondition = parseInt(conditionSelect.value);
+  // Синхронизировать тумблер с выбором направления
+  if (userDirection === 'long') {
+    modeToggle.checked = false;
+  } else {
+    modeToggle.checked = true;
+  }
+  searchMode = userDirection;
+  if (modeLabel) modeLabel.textContent = userDirection === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
+  startDialog.style.display = 'none';
+  document.querySelector('.stocks-table-container').style.display = '';
+  changeChoiceBtn.style.display = '';
+  loadGainers();
+};
+changeChoiceBtn.onclick = () => {
+    startDialog.style.display = 'flex';
+    document.querySelector('.stocks-table-container').style.display = 'none';
+    changeChoiceBtn.style.display = 'none';
+    // Сброс таблицы и статуса
+    const tbody = document.getElementById('gainers-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading">Загрузка данных...</td></tr>';
+    if (document.getElementById('status')) document.getElementById('status').textContent = 'Загрузка...';
+    // При возврате в диалог выставляем select и описание на последнее выбранное значение
+    if (userDirection) showConditionOptions(userDirection);
+    if (typeof userCondition === 'number') conditionSelect.value = userCondition;
+    updateConditionDetails();
+};
+// Скрываем таблицу до выбора
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('.stocks-table-container').style.display = 'none';
+  changeChoiceBtn.style.display = 'none';
+  startDialog.style.display = 'flex';
+});
+
 // Первый запуск
 loadGainers();
 // Кнопка обновления
@@ -631,6 +1133,51 @@ refreshBtn.addEventListener('click', () => {
 });
 // Автообновление цен раз в 5 секунд (только цены, не тикеры)
 setInterval(updatePrices, 5000);
+
+// === КОМПАКТНЫЕ КНОПКИ И ТУЛТИПЫ ===
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function setupActionButtonTooltip(btn) {
+    btn.addEventListener('mouseenter', function() {
+      btn.classList.add('show-tooltip');
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.classList.remove('show-tooltip');
+    });
+    // Для мобильных: показываем tooltip при первом тапе, при втором — действие
+    let tapped = false;
+    btn.addEventListener('touchend', function(e) {
+      if (!tapped) {
+        btn.classList.add('show-tooltip');
+        tapped = true;
+        setTimeout(() => { btn.classList.remove('show-tooltip'); tapped = false; }, 1500);
+        e.preventDefault();
+      } else {
+        btn.classList.remove('show-tooltip');
+        tapped = false;
+      }
+    });
+  }
+
+  const miniRefreshBtn = document.getElementById('mini-refresh-btn');
+  const miniChangeChoiceBtn = document.getElementById('mini-change-choice-btn');
+  if (miniRefreshBtn) {
+    setupActionButtonTooltip(miniRefreshBtn);
+    miniRefreshBtn.onclick = function(e) {
+      e.preventDefault();
+      if (typeof loadGainers === 'function') loadGainers();
+    };
+  }
+  if (miniChangeChoiceBtn) {
+    setupActionButtonTooltip(miniChangeChoiceBtn);
+    miniChangeChoiceBtn.onclick = function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('change-choice-btn');
+      if (btn && typeof btn.onclick === 'function') btn.onclick();
+    };
+  }
+});
 </script>
 </body>
 </html> 
