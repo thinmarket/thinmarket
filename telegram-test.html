@@ -3,180 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram WebApp Test</title>
+    <title>Улыбнись! 😃</title>
     <style>
         body {
-            background-color: #2E2E2E;
-            color: white;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+            color: #fff;
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .test-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #252525;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        .smile {
+            font-size: 120px;
+            margin-bottom: 20px;
+            animation: bounce 1.5s infinite;
         }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-weight: bold;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
         }
-        .success { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
-        .error { background: rgba(244, 67, 54, 0.2); color: #F44336; }
-        .info { background: rgba(33, 150, 243, 0.2); color: #2196F3; }
-        button {
-            background: #4CAF50;
-            color: white;
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px #0008;
+        }
+        p {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: #fff;
+            color: #2196F3;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
             cursor: pointer;
-            margin: 5px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transition: background 0.2s, color 0.2s;
         }
-        button:hover { background: #388E3C; }
-        pre {
-            background: #1a1a1a;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 12px;
+        .btn:hover {
+            background: #2196F3;
+            color: #fff;
+        }
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            width: 100vw;
+            text-align: center;
+            color: #fff9;
+            font-size: 1em;
         }
     </style>
 </head>
 <body>
-    <div class="test-container">
-        <h1>🧪 Тест Telegram WebApp API</h1>
-        
-        <div id="status" class="status info">
-            Загрузка...
-        </div>
-        
-        <div id="user-info" style="display: none;">
-            <h3>👤 Информация о пользователе:</h3>
-            <pre id="user-data"></pre>
-        </div>
-        
-        <div id="app-info" style="display: none;">
-            <h3>📱 Информация о приложении:</h3>
-            <pre id="app-data"></pre>
-        </div>
-        
-        <button onclick="testTelegram()">🔄 Повторить тест</button>
-        <button onclick="clearLog()">🗑️ Очистить лог</button>
-        
-        <h3>📋 Лог консоли:</h3>
-        <pre id="console-log"></pre>
-    </div>
-
-    <script>
-        // Функция для логирования
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = `[${timestamp}] ${message}\n`;
-            
-            // В консоль
-            console.log(message);
-            
-            // На страницу
-            const logElement = document.getElementById('console-log');
-            logElement.textContent += logEntry;
-            logElement.scrollTop = logElement.scrollHeight;
-        }
-
-        // Очистить лог
-        function clearLog() {
-            document.getElementById('console-log').textContent = '';
-        }
-
-        // Основная функция тестирования
-        function testTelegram() {
-            log('🚀 Начинаем тест Telegram WebApp API...');
-            
-            const statusElement = document.getElementById('status');
-            const userInfoElement = document.getElementById('user-info');
-            const appInfoElement = document.getElementById('app-info');
-            
-            try {
-                if (window.Telegram && window.Telegram.WebApp) {
-                    log('✅ Telegram WebApp API доступен!');
-                    statusElement.textContent = '✅ Telegram WebApp API найден!';
-                    statusElement.className = 'status success';
-                    
-                    const tg = window.Telegram.WebApp;
-                    tg.ready();
-                    log('📱 Приложение готово к работе');
-                    
-                    // Данные пользователя
-                    const user = tg.initDataUnsafe?.user;
-                    if (user) {
-                        log('👤 Данные пользователя получены');
-                        document.getElementById('user-data').textContent = JSON.stringify(user, null, 2);
-                        userInfoElement.style.display = 'block';
-                    } else {
-                        log('⚠️ Данные пользователя недоступны');
-                    }
-                    
-                    // Информация о приложении
-                    const appInfo = {
-                        version: tg.version,
-                        platform: tg.platform,
-                        colorScheme: tg.colorScheme,
-                        viewportHeight: tg.viewportHeight,
-                        viewportStableHeight: tg.viewportStableHeight,
-                        isExpanded: tg.isExpanded,
-                        themeParams: tg.themeParams
-                    };
-                    
-                    log('📱 Информация о приложении получена');
-                    document.getElementById('app-data').textContent = JSON.stringify(appInfo, null, 2);
-                    appInfoElement.style.display = 'block';
-                    
-                    // Дополнительные возможности
-                    log('🔧 Доступные методы:');
-                    log(`  - tg.ready() - ${typeof tg.ready === 'function' ? '✅' : '❌'}`);
-                    log(`  - tg.close() - ${typeof tg.close === 'function' ? '✅' : '❌'}`);
-                    log(`  - tg.expand() - ${typeof tg.expand === 'function' ? '✅' : '❌'}`);
-                    log(`  - tg.MainButton - ${typeof tg.MainButton === 'object' ? '✅' : '❌'}`);
-                    log(`  - tg.BackButton - ${typeof tg.BackButton === 'object' ? '✅' : '❌'}`);
-                    
-                    return true;
-                } else {
-                    log('❌ Telegram WebApp API не найден');
-                    log('💡 Для тестирования:');
-                    log('   1. Создайте бота через @BotFather');
-                    log('   2. Настройте Web App с URL этого сайта');
-                    log('   3. Откройте бота в Telegram');
-                    
-                    statusElement.textContent = '❌ Запустите через Telegram для тестирования';
-                    statusElement.className = 'status error';
-                    
-                    return false;
-                }
-            } catch (error) {
-                log(`❌ Ошибка: ${error.message}`);
-                statusElement.textContent = `❌ Ошибка: ${error.message}`;
-                statusElement.className = 'status error';
-                return false;
-            }
-        }
-
-        // Автоматический тест при загрузке
-        window.addEventListener('DOMContentLoaded', () => {
-            log('📄 Страница загружена');
-            setTimeout(testTelegram, 500);
-        });
-
-        // Делаем функцию доступной глобально
-        window.testTelegram = testTelegram;
-        
-        // Первоначальный лог
-        log('🧪 Тестовый файл загружен');
-        log('💡 Введите в консоли: testTelegram()');
-    </script>
+    <div class="smile">😃</div>
+    <h1>Улыбнись! Всё работает 🎉</h1>
+    <p>Ты открыл эту страницу через Telegram Mini App.<br>Значит, интеграция работает!</p>
+    <button class="btn" onclick="alert('Хорошего дня! 😊')">Нажми меня!</button>
+    <div class="footer">&copy; ThinMarketBot | Telegram Mini App Test</div>
 </body>
 </html>
