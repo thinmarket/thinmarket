@@ -806,6 +806,14 @@ function renderTable(gainers) {
         tbody.appendChild(tr);
     }
 }
+// === ДОБАВЛЕНО: обработчик фильтра типа ===
+document.getElementById('type-filter').addEventListener('change', function() {
+    if (deepModeToggle.checked) {
+        renderTable(filterDeep(allGainers));
+    } else {
+        renderTable(allGainers);
+    }
+});
 
 async function loadGainers() {
     console.log('[loadGainers] userDirection:', userDirection, 'userCondition:', userCondition, 'searchMode:', searchMode);
