@@ -232,6 +232,70 @@
             h1.title { font-size: 18px; }
             .stocks-table th, .stocks-table td { padding: 6px; font-size: 12px; }
         }
+        #refresh-btn, #change-choice-btn {
+            display: none !important;
+        }
+        .table-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .action-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #232629 60%, #8BC34A 100%);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8BC34A;
+            font-size: 20px;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            position: relative;
+        }
+        .action-btn:hover, .action-btn:focus {
+            background: linear-gradient(135deg, #8BC34A 60%, #232629 100%);
+            color: #fff;
+        }
+        .action-tooltip {
+            display: none;
+            position: absolute;
+            top: 44px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #232629;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px #0007;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .action-btn.show-tooltip .action-tooltip {
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .table-actions {
+                top: 8px;
+                right: 8px;
+                gap: 7px;
+            }
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 17px;
+            }
+            .action-tooltip {
+                font-size: 13px;
+                padding: 5px 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -246,6 +310,13 @@
     </div>
     <div class="stocks-table-container">
         <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; gap: 10px;">
+            <label style="font-size:15px;user-select:none;">Тип:
+                <select id="type-filter" style="padding:6px 12px;border-radius:8px;font-size:15px;">
+                    <option value="all">Все</option>
+                    <option value="spot">spot</option>
+                    <option value="linear">linear</option>
+                </select>
+            </label>
             <label class="switch-label">
                 <span id="mode-label" style="margin-right:10px;font-weight:bold;font-size:15px;">Режим: Лонг</span>
                 <span class="switch">
@@ -253,22 +324,26 @@
                     <span class="slider"></span>
                 </span>
             </label>
-            <select id="type-filter" style="padding:6px 12px;border-radius:8px;font-size:15px;">
-                <option value="all">Все</option>
-                <option value="spot">spot</option>
-                <option value="linear">linear</option>
-            </select>
-            <button id="refresh-btn" style="padding: 8px 18px; background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%); color: white; border: none; border-radius: 20px; font-size: 15px; font-weight: bold; box-shadow: 0 2px 6px rgba(76,175,80,0.2); cursor: pointer; transition: all 0.2s;">Обновить список</button>
-        </div>
-        <div id="deep-mode-container" style="display:none;margin-bottom:10px;">
-            <label style="font-size:15px;user-select:none;cursor:pointer;">
-                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
-            </label>
+            <div class="table-actions">
+                <button id="mini-refresh-btn" class="action-btn" tabindex="0" aria-label="Обновить список">
+                    <span>⟳</span>
+                    <span class="action-tooltip">Обновить список</span>
+                </button>
+                <button id="mini-change-choice-btn" class="action-btn" tabindex="0" aria-label="Изменить выбор">
+                    <span>⇄</span>
+                    <span class="action-tooltip">Изменить выбор</span>
+                </button>
+            </div>
         </div>
         <div style="margin-bottom:10px;">
             <progress id="progress-bar" value="0" max="100" style="width:100%;height:18px;display:none;"></progress>
         </div>
         <div id="status" class="loading">Загрузка...</div>
+        <div id="deep-mode-container" style="display:none;margin-bottom:10px;">
+            <label style="font-size:15px;user-select:none;cursor:pointer;">
+                <input type="checkbox" id="deep-mode-toggle" style="margin-right:6px;">Глубокий анализ
+            </label>
+        </div>
         <div style="overflow-x: auto;">
             <table class="stocks-table">
                 <thead>
@@ -287,6 +362,62 @@
             </table>
         </div>
     </div>
+<!-- Модальное окно инструкции -->
+<div id="how-it-works-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(18,18,18,0.98);z-index:2000;align-items:center;justify-content:center;overflow-y:auto;">
+  <div style="background:#232629;padding:32px 28px 24px 28px;border-radius:18px;box-shadow:0 8px 32px #000a;min-width:320px;max-width:90vw;max-height:90vh;overflow-y:auto;position:relative;">
+    <button id="close-how-it-works" style="position:absolute;top:12px;right:16px;font-size:22px;background:none;border:none;color:#8BC34A;cursor:pointer;">×</button>
+    <h2 style="margin-top:0;text-align:center;font-size:22px;color:#8BC34A;">Как работает страница Bybit Weekly Gainers?</h2>
+    <div style="font-size:16px;line-height:1.7;color:#e0e0e0;max-height:65vh;overflow-y:auto;">
+      <ol style="padding-left:18px;">
+        <li><b>Выберите направление (лонг/шорт) и условие отбора.</b></li>
+        <li>Страница анализирует все тикеры Bybit (SPOT и USDT-фьючерсы) по выбранному режиму:
+          <ul>
+            <li><b>Классика:</b> сравниваются закрытия двух последних недель. Если закрытие недели 2 выше недели 1 (или ниже — для шорта), тикер попадает в список. Если не прошло по закрытию, но текущая цена пробила high/low недели 2 — тикер тоже попадёт в список.</li>
+            <li><b>Breakout по high/low недели 1:</b> сравнивается закрытие недели 2 с high/low недели 1. Аналогично, breakout — если текущая цена пробила high/low недели 1.</li>
+            <li><b>Breakout по экстремуму за 6 месяцев:</b> сравнивается закрытие недели 2 с экстремумом за 6 месяцев (без учёта самой последней недели). Если не прошло по закрытию, но текущая цена пробила экстремум — тикер попадёт в список.<br>
+            Если экстремум был обновлён именно на последней неделе, строка будет выделена цветом: зелёная для лонга, красная для шорта.</li>
+          </ul>
+        </li>
+        <li>В режиме 6 месяцев:
+          <ul>
+            <li>Экстремум считается только по 26 неделям ДО последней завершённой недели.</li>
+            <li>Тикер попадает в список, если закрытие недели 2 или текущая цена превысили экстремум (лонг) или пробили минимум (шорт).</li>
+            <li>Если экстремум был обновлён именно на последней неделе, строка будет выделена цветом: зелёная для лонга, красная для шорта.</li>
+            <li>Текущая цена подсвечивается красным, если она ниже закрытия недели 2 (лонг) или выше (шорт).</li>
+          </ul>
+        </li>
+        <li><b>Жёлтым цветом выделяются тикеры, где текущая цена пробила экстремум, high/low недели 1 или недели 2 (breakout).</b></li>
+        <li>Можно фильтровать по типу инструмента: SPOT или USDT-фьючерсы (linear).</li>
+        <li>Кнопка <b>Глубокий анализ</b> показывает только тикеры с полной историей за 6 месяцев (26 недель).</li>
+        <li>Клик по тикеру открывает график на TradingView.</li>
+        <li>Цены обновляются автоматически каждые 10 секунд.</li>
+      </ol>
+      <div style="margin-top:10px;font-size:15px;color:#8BC34A;">Если у вас есть предложения по улучшению — пишите!<br>
+        <a href="https://t.me/CtrlC_winR_CtrlV" target="_blank" style="color:#40b3e0;text-decoration:underline;font-weight:bold;">@CtrlC_winR_CtrlV (Telegram)</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Модальное окно выбора условий -->
+<div id="start-dialog" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(18,18,18,0.98);z-index:2100;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#232629;padding:32px 28px 24px 28px;border-radius:18px;box-shadow:0 8px 32px #000a;min-width:320px;max-width:90vw;">
+    <h2 style="margin-top:0;text-align:center;font-size:22px;">Выберите направление</h2>
+    <div style="display:flex;gap:18px;justify-content:center;margin-bottom:18px;">
+      <button id="long-btn" style="padding:12px 32px;font-size:17px;font-weight:bold;border-radius:12px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;cursor:pointer;">Лонг</button>
+      <button id="short-btn" style="padding:12px 32px;font-size:17px;font-weight:bold;border-radius:12px;border:none;background:linear-gradient(90deg,#F44336,#e57373);color:#fff;cursor:pointer;">Шорт</button>
+    </div>
+    <div id="condition-block" style="display:none;margin-bottom:18px;">
+      <label for="condition-select" style="font-size:16px;">Выберите условие:</label><br>
+      <select id="condition-select" style="margin-top:8px;width:100%;padding:8px 12px;font-size:16px;border-radius:8px;background:#181a1b;color:#fff;border:1px solid #444;"></select>
+    </div>
+    <div id="condition-details" style="margin-top:10px;font-size:15px;color:#8BC34A;min-height:40px;"></div>
+    <div style="text-align:center;">
+      <button id="start-btn" style="padding:10px 28px;font-size:16px;font-weight:bold;border-radius:10px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;cursor:pointer;display:none;">Показать</button>
+    </div>
+  </div>
+</div>
+<!-- Кнопка "Изменить выбор" -->
+<button id="change-choice-btn" style="display:none;position:fixed;top:22px;right:22px;z-index:2200;padding:10px 22px;font-size:15px;font-weight:bold;border-radius:10px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;box-shadow:0 2px 8px #0005;cursor:pointer;">Изменить выбор</button>
 <script>
 const BYBIT_SYMBOLS_URL = "https://api.bybit.com/v5/market/instruments-info?category=";
 const BYBIT_KLINE_URL = "https://api.bybit.com/v5/market/kline?category={category}&symbol={symbol}&interval=W&limit=3";
@@ -296,78 +427,479 @@ const CATEGORIES = ["spot", "linear"];
 let searchMode = 'long'; // 'long' или 'short'
 let allGainers = [];
 let prices = {};
+let isLoading = false;
 
 const modeToggle = document.getElementById('mode-toggle');
 const modeLabel = document.getElementById('mode-label');
 const highlowCol = document.getElementById('highlow-col');
-const deepModeToggle = document.getElementById('deep-mode-toggle');
 const typeFilter = document.getElementById('type-filter');
 
 modeToggle.addEventListener('change', () => {
     searchMode = modeToggle.checked ? 'short' : 'long';
+    userDirection = searchMode; // Синхронизируем направление
+    userCondition = 0; // Сброс на классическое условие
     modeLabel.textContent = searchMode === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
     highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
+    // Обновляем select и детали условия, если элементы существуют
+    const conditionSelect = document.getElementById('condition-select');
+    const conditionDetailsDiv = document.getElementById('condition-details');
+    if (conditionSelect) {
+        conditionSelect.innerHTML = '';
+        const CONDITIONS = {
+            long: [
+                'Классика: сравниваем закрытия двух недель, breakout по high недели 2',
+                'Breakout по high недели 1',
+                'Breakout по максимальному high за 6 месяцев'
+            ],
+            short: [
+                'Классика: сравниваем закрытия двух недель, breakout по low недели 2',
+                'Breakout по low недели 1',
+                'Breakout по минимальному low за 6 месяцев'
+            ]
+        };
+        CONDITIONS[searchMode].forEach((text, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = text;
+            conditionSelect.appendChild(opt);
+        });
+        conditionSelect.value = 0;
+    }
+    if (conditionDetailsDiv) {
+        const CONDITION_DETAILS = {
+            long: [
+                'В список попадают тикеры, где закрытие недели 2 выше недели 1. Если не прошло по закрытию, но текущая цена выше high недели 2 — тикер выделяется жёлтым (breakout).',
+                'В список попадают тикеры, где закрытие недели 2 выше high недели 1. Если не прошло по закрытию, но текущая цена выше high недели 1 — тикер выделяется жёлтым (breakout).',
+                'В список попадают тикеры, где закрытие недели 2 выше максимального high за 6 месяцев. Если не прошло по закрытию, но текущая цена выше максимального high за 6 месяцев — тикер выделяется жёлтым (breakout).'
+            ],
+            short: [
+                'В список попадают тикеры, где закрытие недели 2 ниже недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 2 — тикер выделяется жёлтым (breakout).',
+                'В список попадают тикеры, где закрытие недели 2 ниже low недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 1 — тикер выделяется жёлтым (breakout).',
+                'В список попадают тикеры, где закрытие недели 2 ниже минимального low за 6 месяцев. Если не прошло по закрытию, но текущая цена ниже минимального low за 6 месяцев — тикер выделяется жёлтым (breakout).'
+            ]
+        };
+        conditionDetailsDiv.textContent = CONDITION_DETAILS[searchMode][0];
+    }
     loadGainers();
 });
 document.addEventListener('DOMContentLoaded', () => {
     highlowCol.textContent = searchMode === 'long' ? 'Хай недели 2' : 'Лоу недели 2';
 });
-deepModeToggle.addEventListener('change', () => {
-    renderTable(filterDeep(allGainers));
-});
-typeFilter.addEventListener('change', () => {
-    renderTable(filterDeep(allGainers));
-});
-document.getElementById('how-it-works').onclick = function() {
-    alert(
-        'Страница ищет тикеры Bybit, которые за последнюю неделю:\n' +
-        '- В режиме Лонг: выросли (цена закрытия недели 2 выше недели 1)\n' +
-        '- В режиме Шорт: упали (цена закрытия недели 2 ниже недели 1)\n' +
-        'В таблице:\n' +
-        '- Можно открыть график на TradingView по тикеру Bybit\n' +
-        'Зелёный цвет последней цены: для лонга — если выше high недели, для шорта — если ниже low недели.\n' +
-        '\nГлубокий анализ: фильтрует только те тикеры, где текущая цена выше high недели 2 (лонг) или ниже low недели 2 (шорт).'
-    );
+
+// === ЛОГИКА ВЫБОРА НАПРАВЛЕНИЯ И УСЛОВИЯ ===
+let userDirection = null; // 'long' или 'short'
+let userCondition = null; // 0, 1, 2
+
+const CONDITIONS = {
+  long: [
+    'Классика: сравниваем закрытия двух недель, breakout по high недели 2',
+    'Breakout по high недели 1',
+    'Breakout по максимальному high за 6 месяцев'
+  ],
+  short: [
+    'Классика: сравниваем закрытия двух недель, breakout по low недели 2',
+    'Breakout по low недели 1',
+    'Breakout по минимальному low за 6 месяцев'
+  ]
 };
 
+const CONDITION_DETAILS = {
+  long: [
+    'В список попадают тикеры, где закрытие недели 2 выше недели 1. Если не прошло по закрытию, но текущая цена выше high недели 2 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 выше high недели 1. Если не прошло по закрытию, но текущая цена выше high недели 1 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 выше максимального high за 6 месяцев. Если не прошло по закрытию, но текущая цена выше максимального high за 6 месяцев — тикер выделяется жёлтым (breakout).'
+  ],
+  short: [
+    'В список попадают тикеры, где закрытие недели 2 ниже недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 2 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 ниже low недели 1. Если не прошло по закрытию, но текущая цена ниже low недели 1 — тикер выделяется жёлтым (breakout).',
+    'В список попадают тикеры, где закрытие недели 2 ниже минимального low за 6 месяцев. Если не прошло по закрытию, но текущая цена ниже минимального low за 6 месяцев — тикер выделяется жёлтым (breakout).'
+  ]
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Модальное окно выбора направления и условий ---
+    const startDialog = document.getElementById('start-dialog');
+    const longBtn = document.getElementById('long-btn');
+    const shortBtn = document.getElementById('short-btn');
+    const conditionBlock = document.getElementById('condition-block');
+    const conditionSelect = document.getElementById('condition-select');
+    const startBtn = document.getElementById('start-btn');
+    const changeChoiceBtn = document.getElementById('change-choice-btn');
+    let conditionDetailsDiv = document.getElementById('condition-details');
+
+    function showConditionOptions(direction) {
+      conditionSelect.innerHTML = '';
+      CONDITIONS[direction].forEach((text, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = text;
+        conditionSelect.appendChild(opt);
+      });
+      conditionBlock.style.display = '';
+      startBtn.style.display = '';
+    }
+    function updateConditionDetails() {
+      if (userDirection && typeof userCondition === 'number') {
+        conditionDetailsDiv.textContent = CONDITION_DETAILS[userDirection][userCondition];
+      } else {
+        conditionDetailsDiv.textContent = '';
+      }
+    }
+    longBtn.onclick = () => {
+      userDirection = 'long';
+      showConditionOptions('long');
+      userCondition = 0;
+      conditionSelect.value = 0;
+      updateConditionDetails();
+    };
+    shortBtn.onclick = () => {
+      userDirection = 'short';
+      showConditionOptions('short');
+      userCondition = 0;
+      conditionSelect.value = 0;
+      updateConditionDetails();
+    };
+    conditionSelect.onchange = () => {
+      userCondition = parseInt(conditionSelect.value);
+      updateConditionDetails();
+    };
+    startBtn.onclick = () => {
+      userCondition = parseInt(conditionSelect.value);
+      // Синхронизировать тумблер с выбором направления
+      if (userDirection === 'long') {
+        modeToggle.checked = false;
+      } else {
+        modeToggle.checked = true;
+      }
+      searchMode = userDirection;
+      if (modeLabel) modeLabel.textContent = userDirection === 'long' ? 'Режим: Лонг' : 'Режим: Шорт';
+      startDialog.style.display = 'none';
+      document.querySelector('.stocks-table-container').style.display = '';
+      changeChoiceBtn.style.display = '';
+      loadGainers();
+    };
+    changeChoiceBtn.onclick = () => {
+        startDialog.style.display = 'flex';
+        document.querySelector('.stocks-table-container').style.display = 'none';
+        changeChoiceBtn.style.display = 'none';
+        // Сброс таблицы и статуса
+        const tbody = document.getElementById('gainers-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading">Загрузка данных...</td></tr>';
+        if (document.getElementById('status')) document.getElementById('status').textContent = 'Загрузка...';
+        // При возврате в диалог выставляем select и описание на последнее выбранное значение
+        if (userDirection) showConditionOptions(userDirection);
+        if (typeof userCondition === 'number') conditionSelect.value = userCondition;
+        updateConditionDetails();
+    };
+    // Скрываем таблицу до выбора
+    document.querySelector('.stocks-table-container').style.display = 'none';
+    changeChoiceBtn.style.display = 'none';
+    startDialog.style.display = 'flex';
+});
+// === ДИНАМИЧЕСКИЕ КОЛОНКИ ===
+function updateTableHeader() {
+    const thead = document.querySelector('.stocks-table thead');
+    if (!thead) return;
+    while (thead.firstChild) thead.removeChild(thead.firstChild);
+    const tr = document.createElement('tr');
+    const thTicker = document.createElement('th'); thTicker.textContent = 'Тикер'; tr.appendChild(thTicker);
+    const thType = document.createElement('th'); thType.textContent = 'Тип'; tr.appendChild(thType);
+    if (userCondition === 2) {
+        const thExtremum = document.createElement('th');
+        thExtremum.textContent = userDirection === 'long' ? 'Макс. хай за 6 мес.' : 'Мин. лоу за 6 мес.';
+        tr.appendChild(thExtremum);
+        const thLast = document.createElement('th');
+        thLast.textContent = 'Закрытие недели 2';
+        tr.appendChild(thLast);
+        const thPrice = document.createElement('th');
+        thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">обновл. ~10 сек</span>';
+        tr.appendChild(thPrice);
+        const thComment = document.createElement('th');
+        thComment.textContent = 'Комментарий';
+        tr.appendChild(thComment);
+    } else if (userCondition === 1 && userDirection === 'long') {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thHigh1 = document.createElement('th'); thHigh1.textContent = 'Хай недели 1'; tr.appendChild(thHigh1);
+        const thHigh2 = document.createElement('th'); thHigh2.textContent = 'Хай недели 2'; tr.appendChild(thHigh2);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">обновл. ~10 сек</span>'; tr.appendChild(thPrice);
+    } else if (userCondition === 1 && userDirection === 'short') {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thLow1 = document.createElement('th'); thLow1.textContent = 'Лоу недели 1'; tr.appendChild(thLow1);
+        const thLow2 = document.createElement('th'); thLow2.textContent = 'Лоу недели 2'; tr.appendChild(thLow2);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">обновл. ~10 сек</span>'; tr.appendChild(thPrice);
+    } else {
+        const thPrev = document.createElement('th'); thPrev.textContent = 'Неделя 1'; tr.appendChild(thPrev);
+        const thLast = document.createElement('th'); thLast.textContent = 'Неделя 2'; tr.appendChild(thLast);
+        const thHighLow = document.createElement('th'); thHighLow.textContent = userDirection === 'long' ? 'Хай недели 2' : 'Лоу недели 2'; tr.appendChild(thHighLow);
+        const thPrice = document.createElement('th'); thPrice.innerHTML = 'Последняя цена<br><span style="font-size:10px;color:#aaa;font-weight:normal;">обновл. ~10 сек</span>'; tr.appendChild(thPrice);
+    }
+    thead.appendChild(tr);
+}
+
+// === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ deepMode ===
+let deepModeContainer, deepModeToggle;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Переносим все действия с deepModeContainer внутрь DOMContentLoaded
+    deepModeContainer = document.getElementById('deep-mode-container');
+    deepModeToggle = document.getElementById('deep-mode-toggle');
+
+    // Переносим все действия с deepModeContainer внутрь DOMContentLoaded
+    window.setDeepModeDisplay = function(len) {
+        if (deepModeContainer) {
+            deepModeContainer.style.display = len ? '' : 'none';
+            if (deepModeToggle) deepModeToggle.checked = false;
+        }
+    };
+
+    // Навешиваем обработчики только после инициализации
+    if (deepModeToggle) {
+        deepModeToggle.addEventListener('change', () => {
+            renderTable(filterDeep(allGainers));
+        });
+    }
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            renderTable(filterDeep(allGainers));
+        });
+    }
+});
+
+// === ФУНКЦИИ ДЛЯ ПОЛУЧЕНИЯ СВЕЧЕЙ BYBIT ===
+async function getWeeklyKlines(symbol, category, weeks) {
+    // Получить N недельных свечей (Bybit: [0] - текущая, [1] - последняя завершённая, [2] - предпоследняя ...)
+    const url = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=W&limit=${weeks+1}`;
+    const resp = await fetch(url);
+    if (!resp.ok) { return null; }
+    const data = await resp.json();
+    const klines = data.result?.list || [];
+    return klines;
+}
+
+// === ГЛАВНАЯ ФУНКЦИЯ ЗАГРУЗКИ И АНАЛИЗА ===
+async function loadGainers() {
+    if (isLoading) { return; }
+    isLoading = true;
+    document.getElementById('status').textContent = 'Получаем тикеры...';
+    const tickers = await getAllTickers();
+    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
+    const all = [];
+    let checked = 0;
+    const progressBar = document.getElementById('progress-bar');
+    progressBar.style.display = '';
+    progressBar.value = 0;
+    progressBar.max = tickers.length;
+    if (userCondition === 2) {
+        const klinesMap = {};
+        for (let i = 0; i < tickers.length; i++) {
+            const t = tickers[i];
+            const klines = await getWeeklyKlines(t.symbol, t.category, 27);
+            klinesMap[`${t.symbol}_${t.category}`] = klines;
+            checked++;
+            if (checked % 10 === 0) {
+                progressBar.value = checked;
+                document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+            }
+        }
+        for (const t of tickers) {
+            let g = { symbol: t.symbol, category: t.category };
+            const klines = klinesMap[`${t.symbol}_${t.category}`];
+            if (!klines || klines.length < 3) { g.data_weeks = undefined; continue; }
+            const completed = klines.slice(1);
+            g.data_weeks = completed.length;
+            if (g.data_weeks < 2) { continue; }
+            const last = completed[0];
+            g.last_close = parseFloat(last[4]);
+            // Новый расчёт экстремума: только по неделям ДО last_close
+            const extremumSlice = completed.slice(1); // completed[1..]
+            if (userDirection === 'long') {
+                g.extremum = extremumSlice.length ? Math.max(...extremumSlice.map(k=>parseFloat(k[2]))) : undefined;
+            } else {
+                g.extremum = extremumSlice.length ? Math.min(...extremumSlice.map(k=>parseFloat(k[3]))) : undefined;
+            }
+            // Если last_close > extremum — обычный breakout
+            // Если last_close == extremum — свежий breakout (на последней неделе)
+            if (g.extremum !== undefined && g.last_close === g.extremum) {
+                g._fresh_breakout = true;
+            }
+            all.push(g);
+        }
+        document.getElementById('status').textContent = `Загружаем последние цены...`;
+        prices = await getLastPrices();
+        for (const g of all) {
+            g.price = prices[`${g.symbol}_${g.category}`];
+        }
+        const final = [];
+        for (const g of all) {
+            let isClassic = false, isBreakout = false;
+            if (g.last_close !== undefined && g.extremum !== undefined) {
+                if (userDirection === 'long' && g.last_close > g.extremum) isClassic = true;
+                if (userDirection === 'short' && g.last_close < g.extremum) isClassic = true;
+                // fresh breakout: last_close == extremum
+                if (g._fresh_breakout) isBreakout = true;
+            }
+            if (!isClassic && g.price !== undefined && g.extremum !== undefined) {
+                if (userDirection === 'long' && g.price > g.extremum) isBreakout = true;
+                if (userDirection === 'short' && g.price < g.extremum) isBreakout = true;
+            }
+            if (isClassic || isBreakout) {
+                if (isBreakout) g._breakout = true;
+                final.push(g);
+            } else {
+                let reason = '';
+                if (g.last_close === undefined || g.extremum === undefined) reason = 'no last_close/extremum';
+                else if (g.price === undefined) reason = 'no price';
+                else reason = 'not classic/breakout';
+            }
+        }
+        allGainers = final;
+        renderTable(filterDeep(final));
+        document.getElementById('status').textContent = `Готово. Найдено: ${final.length} тикеров.`;
+        // Корректное отображение кнопки Глубокий анализ
+        if (typeof deepModeContainer !== 'undefined' && deepModeContainer) {
+            window.setDeepModeDisplay(final.length);
+        }
+        isLoading = false;
+        progressBar.style.display = 'none';
+        return;
+    }
+    for (const t of tickers) {
+        let g = { symbol: t.symbol, category: t.category };
+        let klines = await getWeeklyKlines(t.symbol, t.category, 3);
+        if (!klines || klines.length < 3) { g.data_weeks = undefined; checked++; continue; }
+        const prev = klines[2];
+        const last = klines[1];
+        g.close1 = parseFloat(prev[4]);
+        g.close2 = parseFloat(last[4]);
+        g.high1 = parseFloat(prev[2]);
+        g.low1 = parseFloat(prev[3]);
+        g.high2 = parseFloat(last[2]);
+        g.low2 = parseFloat(last[3]);
+        g.data_weeks = klines.length - 1;
+        let passed = false;
+        if (userCondition === 1) {
+            if (userDirection === 'long') {
+                if (g.close2 > g.high1) {
+                    all.push(g); passed = true;
+                }
+            } else {
+                if (g.close2 < g.low1) {
+                    all.push(g); passed = true;
+                }
+            }
+        } else {
+            if (userDirection === 'long') {
+                if (g.close2 > g.close1) {
+                    all.push(g); passed = true;
+                }
+            } else {
+                if (g.close2 < g.close1) {
+                    all.push(g); passed = true;
+                }
+            }
+        }
+        if (!passed) {
+        }
+        checked++;
+        if (checked % 10 === 0) {
+            progressBar.value = checked;
+            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
+        }
+    }
+    progressBar.style.display = 'none';
+    document.getElementById('status').textContent = `Загружаем последние цены...`;
+    prices = await getLastPrices();
+    for (const g of all) {
+        g.price = prices[`${g.symbol}_${g.category}`];
+    }
+    for (const g of all) {
+        if (userCondition === 2) {
+            if (g.price !== undefined && g.extremum !== undefined) {
+                if (userDirection === 'long' && g.price > g.extremum) g._breakout = true;
+                else if (userDirection === 'short' && g.price < g.extremum) g._breakout = true;
+                else g._breakout = false;
+            } else {
+                g._breakout = false;
+            }
+        } else if (userCondition === 1) {
+            if (userDirection === 'long' && g.price > g.high1) g._breakout = true;
+            else if (userDirection === 'short' && g.price < g.low1) g._breakout = true;
+            else g._breakout = false;
+        } else {
+            if (userDirection === 'long' && g.price > g.high2) g._breakout = true;
+            else if (userDirection === 'short' && g.price < g.low2) g._breakout = true;
+            else g._breakout = false;
+        }
+    }
+    allGainers = all;
+    renderTable(filterDeep(all));
+    document.getElementById('status').textContent = `Готово. Найдено: ${all.length} тикеров.`;
+    // Корректное отображение кнопки Глубокий анализ
+    if (typeof deepModeContainer !== 'undefined' && deepModeContainer) {
+        window.setDeepModeDisplay(all.length);
+    }
+    isLoading = false;
+}
+// === ГЛУБОКИЙ АНАЛИЗ ===
 function filterDeep(gainers) {
     let filtered = gainers;
     const type = typeFilter.value;
     if (type !== 'all') {
         filtered = filtered.filter(g => g.category === type);
     }
-    if (deepModeToggle.checked) {
-        if (searchMode === 'long') {
-            filtered = filtered.filter(g => g.price !== undefined && g.price > g.high2);
+    if (deepModeToggle && deepModeToggle.checked) {
+        if (userCondition === 2) {
+            // Только тикеры с полной историей (26 недель)
+            filtered = filtered.filter(g => g.data_weeks >= 26);
+        } else if (userCondition === 1) {
+            if (userDirection === 'long') {
+                filtered = filtered.filter(g => g.price !== undefined && g.price > g.high1);
+            } else {
+                filtered = filtered.filter(g => g.price !== undefined && g.price < g.low1);
+            }
         } else {
-            filtered = filtered.filter(g => g.price !== undefined && g.price < g.low2);
+            if (userDirection === 'long') {
+                filtered = filtered.filter(g => g.price !== undefined && g.price > g.high2);
+            } else {
+                filtered = filtered.filter(g => g.price !== undefined && g.price < g.low2);
+            }
         }
     }
     return filtered;
 }
-
+// === ОТОБРАЖЕНИЕ ТАБЛИЦЫ ===
 function renderTable(gainers) {
+    updateTableHeader();
     const tbody = document.getElementById('gainers-table-body');
     tbody.innerHTML = '';
+    const thCount = document.querySelectorAll('.stocks-table thead th').length;
     if (!gainers.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="loading">Нет данных для отображения</td></tr>';
-        document.getElementById('deep-mode-container').style.display = 'none';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = thCount;
+        td.className = 'loading';
+        td.textContent = 'Нет данных для отображения';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
         return;
     }
-    document.getElementById('deep-mode-container').style.display = '';
     for (const g of gainers) {
         const tr = document.createElement('tr');
         if (g._breakout) tr.classList.add('breakout-row');
-        // Тикер (ссылка на TradingView)
+        // Выделение свежего breakout цветом строки
+        if (g._fresh_breakout) {
+            tr.style.background = userDirection === 'long' ? 'rgba(76, 175, 80, 0.25)' : 'rgba(244, 67, 54, 0.25)';
+        }
+        // Тикер
         const tdTicker = document.createElement('td');
         tdTicker.textContent = g.symbol;
         tdTicker.className = 'ticker-link';
         tdTicker.title = 'Открыть график на TradingView';
         tdTicker.onclick = () => {
             let tvSymbol = `BYBIT:${g.symbol}`;
-            if (g.category === 'linear') {
-                tvSymbol += '.P';
-            }
+            if (g.category === 'linear') tvSymbol += '.P';
             let url = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
             window.open(url, '_blank');
         };
@@ -376,39 +908,113 @@ function renderTable(gainers) {
         const tdType = document.createElement('td');
         tdType.textContent = g.category;
         tr.appendChild(tdType);
-        // Неделя 1
-        const tdPrev = document.createElement('td');
-        tdPrev.textContent = g.close1?.toFixed(8) ?? '-';
-        tr.appendChild(tdPrev);
-        // Неделя 2
-        const tdLast = document.createElement('td');
-        tdLast.textContent = g.close2?.toFixed(8) ?? '-';
-        tr.appendChild(tdLast);
-        // Хай/Лоу недели 2
-        const tdHighLow = document.createElement('td');
-        if (searchMode === 'long') {
-            tdHighLow.textContent = g.high2?.toFixed(8) ?? '-';
+        if (userCondition === 2) {
+            // Экстремум за 6 мес.
+            const tdExtremum = document.createElement('td');
+            tdExtremum.textContent = g.extremum !== undefined ? g.extremum.toFixed(8) : '-';
+            tdExtremum.style.fontWeight = 'bold';
+            tr.appendChild(tdExtremum);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = g.last_close !== undefined ? g.last_close.toFixed(8) : '-';
+            tr.appendChild(tdLast);
+            const tdPrice = document.createElement('td');
+            if (g.price !== undefined && g.price !== null) {
+                tdPrice.textContent = g.price.toFixed(8);
+                if ((userDirection === 'long' && g.price > g.extremum) || (userDirection === 'short' && g.price < g.extremum)) {
+                    tdPrice.className = 'price-green';
+                } else if ((userDirection === 'long' && g.price < g.last_close) || (userDirection === 'short' && g.price > g.last_close)) {
+                    tdPrice.className = 'price-red';
+                } else {
+                    tdPrice.className = 'price-gray';
+                }
+            } else {
+                tdPrice.textContent = '-';
+            }
+            tr.appendChild(tdPrice);
+            const tdComment = document.createElement('td');
+            if (g.data_weeks === undefined) {
+                tdComment.textContent = 'нет данных';
+            } else if (g.data_weeks >= 26) {
+                tdComment.textContent = 'Данные за 6 мес.';
+            } else {
+                tdComment.textContent = `Данные только за ${g.data_weeks} недель`;
+            }
+            tr.appendChild(tdComment);
+        } else if (userCondition === 1 && userDirection === 'long') {
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = g.close1 !== undefined ? g.close1.toFixed(8) : '-';
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = g.close2 !== undefined ? g.close2.toFixed(8) : '-';
+            tr.appendChild(tdLast);
+            const tdHigh1 = document.createElement('td');
+            tdHigh1.textContent = g.high1 !== undefined ? g.high1.toFixed(8) : '-';
+            tdHigh1.style.fontWeight = 'bold';
+            tr.appendChild(tdHigh1);
+            const tdHigh2 = document.createElement('td');
+            tdHigh2.textContent = g.high2 !== undefined ? g.high2.toFixed(8) : '-';
+            tr.appendChild(tdHigh2);
+        } else if (userCondition === 1 && userDirection === 'short') {
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = g.close1 !== undefined ? g.close1.toFixed(8) : '-';
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = g.close2 !== undefined ? g.close2.toFixed(8) : '-';
+            tr.appendChild(tdLast);
+            const tdLow1 = document.createElement('td');
+            tdLow1.textContent = g.low1 !== undefined ? g.low1.toFixed(8) : '-';
+            tdLow1.style.fontWeight = 'bold';
+            tr.appendChild(tdLow1);
+            const tdLow2 = document.createElement('td');
+            tdLow2.textContent = g.low2 !== undefined ? g.low2.toFixed(8) : '-';
+            tr.appendChild(tdLow2);
         } else {
-            tdHighLow.textContent = g.low2?.toFixed(8) ?? '-';
+            const tdPrev = document.createElement('td');
+            tdPrev.textContent = g.close1 !== undefined ? g.close1.toFixed(8) : '-';
+            tr.appendChild(tdPrev);
+            const tdLast = document.createElement('td');
+            tdLast.textContent = g.close2 !== undefined ? g.close2.toFixed(8) : '-';
+            tr.appendChild(tdLast);
+            const tdHighLow = document.createElement('td');
+            tdHighLow.textContent = userDirection === 'long' ? (g.high2 !== undefined ? g.high2.toFixed(8) : '-') : (g.low2 !== undefined ? g.low2.toFixed(8) : '-');
+            tr.appendChild(tdHighLow);
         }
-        tr.appendChild(tdHighLow);
         // Последняя цена
         const tdPrice = document.createElement('td');
         if (g.price !== undefined && g.price !== null) {
             tdPrice.textContent = g.price.toFixed(8);
-            if (searchMode === 'long') {
-                if (g.price > g.high2) tdPrice.className = 'price-green';
-                else if (g.price < g.high2) tdPrice.className = 'price-red';
+            if (userCondition === 2) {
+                if ((userDirection === 'long' && g.price > g.extremum) || (userDirection === 'short' && g.price < g.extremum)) {
+                    tdPrice.className = 'price-green';
+                } else {
+                    tdPrice.className = 'price-red';
+                }
+            } else if (userCondition === 1 && userDirection === 'long') {
+                if (g.price > g.high1) tdPrice.className = 'price-green';
+                else if (g.price < g.high1) tdPrice.className = 'price-red';
+                else tdPrice.className = 'price-gray';
+            } else if (userCondition === 1 && userDirection === 'short') {
+                if (g.price < g.low1) tdPrice.className = 'price-green';
+                else if (g.price > g.low1) tdPrice.className = 'price-red';
                 else tdPrice.className = 'price-gray';
             } else {
-                if (g.price < g.low2) tdPrice.className = 'price-green';
-                else if (g.price > g.low2) tdPrice.className = 'price-red';
-                else tdPrice.className = 'price-gray';
+                if (userDirection === 'long') {
+                    if (g.price > g.high2) tdPrice.className = 'price-green';
+                    else if (g.price < g.high2) tdPrice.className = 'price-red';
+                    else tdPrice.className = 'price-gray';
+                } else {
+                    if (g.price < g.low2) tdPrice.className = 'price-green';
+                    else if (g.price > g.low2) tdPrice.className = 'price-red';
+                    else tdPrice.className = 'price-gray';
+                }
             }
         } else {
             tdPrice.textContent = '-';
         }
         tr.appendChild(tdPrice);
+        // После формирования строки выравниваем количество td
+        while (tr.children.length < thCount) tr.appendChild(document.createElement('td'));
+        while (tr.children.length > thCount) tr.removeChild(tr.lastChild);
         tbody.appendChild(tr);
     }
 }
@@ -425,24 +1031,6 @@ async function getAllTickers() {
     return tickers;
 }
 
-async function getLastWeeklyKlines(symbol, category) {
-    const url = BYBIT_KLINE_URL.replace('{category}', category).replace('{symbol}', symbol);
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const klines = data.result?.list || [];
-    if (klines.length < 3) return null;
-    // Bybit API возвращает массив от новой к старой: [0] - текущая, [1] - последняя завершённая, [2] - предпоследняя завершённая
-    const prev = klines[2]; // Неделя 1 (предпоследняя завершённая)
-    const last = klines[1]; // Неделя 2 (последняя завершённая)
-    return {
-        close1: parseFloat(prev[4]),
-        close2: parseFloat(last[4]),
-        high2: parseFloat(last[2]),
-        low2: parseFloat(last[3])
-    };
-}
-
 async function getLastPrices() {
     let allPrices = {};
     for (const category of CATEGORIES) {
@@ -455,79 +1043,81 @@ async function getLastPrices() {
     return allPrices;
 }
 
-async function loadGainers() {
-    document.getElementById('status').textContent = 'Получаем тикеры...';
-    const tickers = await getAllTickers();
-    document.getElementById('status').textContent = `Обрабатываем ${tickers.length} тикеров...`;
-    const all = [];
-    let checked = 0;
-    const progressBar = document.getElementById('progress-bar');
-    progressBar.style.display = '';
-    progressBar.value = 0;
-    progressBar.max = tickers.length;
-    for (const t of tickers) {
-        const klines = await getLastWeeklyKlines(t.symbol, t.category);
-        if (!klines) continue;
-        all.push({
-            symbol: t.symbol,
-            category: t.category,
-            close1: klines.close1,
-            close2: klines.close2,
-            high2: klines.high2,
-            low2: klines.low2
-        });
-        checked++;
-        if (checked % 10 === 0) {
-            document.getElementById('status').textContent = `Проверено: ${checked}/${tickers.length}`;
-        }
-        progressBar.value = checked;
-    }
-    progressBar.style.display = 'none';
-    document.getElementById('status').textContent = `Загружаем последние цены...`;
-    prices = await getLastPrices();
-    for (const g of all) {
-        g.price = prices[`${g.symbol}_${g.category}`];
-    }
-    // Формируем итоговый список
-    const result = [];
-    for (const g of all) {
-        if (
-            (searchMode === 'long' && g.close2 > g.close1) ||
-            (searchMode === 'short' && g.close2 < g.close1)
-        ) {
-            // Классика
-            result.push(g);
-        } else if (
-            (searchMode === 'long' && g.price > g.high2) ||
-            (searchMode === 'short' && g.price < g.low2)
-        ) {
-            // Breakout
-            g._breakout = true;
-            result.push(g);
-        }
-    }
-    document.getElementById('status').textContent = `Готово. Найдено: ${result.length} тикеров (${result.filter(x=>!x._breakout).length} классика, ${result.filter(x=>x._breakout).length} breakout).`;
-    allGainers = result;
-    renderTable(filterDeep(result));
-}
-
+// === ОБНОВЛЕНИЕ ЦЕН ===
 async function updatePrices() {
+    if (!allGainers || !allGainers.length) return;
     prices = await getLastPrices();
     for (const g of allGainers) {
         g.price = prices[`${g.symbol}_${g.category}`];
+        // Пересчёт breakout
+        if (userCondition === 2) {
+            if (g.price !== undefined && g.extremum !== undefined) {
+                if (userDirection === 'long' && g.price > g.extremum) g._breakout = true;
+                else if (userDirection === 'short' && g.price < g.extremum) g._breakout = true;
+                else g._breakout = false;
+            } else {
+                g._breakout = false;
+            }
+        } else if (userCondition === 1) {
+            if (userDirection === 'long' && g.price > g.high1) g._breakout = true;
+            else if (userDirection === 'short' && g.price < g.low1) g._breakout = true;
+            else g._breakout = false;
+        } else {
+            if (userDirection === 'long' && g.price > g.high2) g._breakout = true;
+            else if (userDirection === 'short' && g.price < g.low2) g._breakout = true;
+            else g._breakout = false;
+        }
     }
     renderTable(filterDeep(allGainers));
 }
-
 // Первый запуск
-loadGainers();
 // Кнопка обновления
-const refreshBtn = document.getElementById('refresh-btn');
-refreshBtn.addEventListener('click', () => {
-    loadGainers();
-});
+// const refreshBtn = document.getElementById('refresh-btn');
+// refreshBtn.addEventListener('click', () => {
+//     loadGainers();
+// });
 // Автообновление цен раз в 10 секунд
 setInterval(updatePrices, 10000);
+document.addEventListener('DOMContentLoaded', function() {
+  function setupActionButtonTooltip(btn) {
+    btn.addEventListener('mouseenter', function() {
+      btn.classList.add('show-tooltip');
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.classList.remove('show-tooltip');
+    });
+    // Для мобильных: показываем tooltip при первом тапе, при втором — действие
+    let tapped = false;
+    btn.addEventListener('touchend', function(e) {
+      if (!tapped) {
+        btn.classList.add('show-tooltip');
+        tapped = true;
+        setTimeout(() => { btn.classList.remove('show-tooltip'); tapped = false; }, 1500);
+        e.preventDefault();
+      } else {
+        btn.classList.remove('show-tooltip');
+        tapped = false;
+      }
+    });
+  }
+  const miniRefreshBtn = document.getElementById('mini-refresh-btn');
+  const miniChangeChoiceBtn = document.getElementById('mini-change-choice-btn');
+  if (miniRefreshBtn) {
+    setupActionButtonTooltip(miniRefreshBtn);
+    miniRefreshBtn.onclick = function(e) {
+      e.preventDefault();
+      if (typeof loadGainers === 'function') loadGainers();
+    };
+  }
+  if (miniChangeChoiceBtn) {
+    setupActionButtonTooltip(miniChangeChoiceBtn);
+    miniChangeChoiceBtn.onclick = function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('change-choice-btn');
+      if (btn && typeof btn.onclick === 'function') btn.onclick();
+    };
+  }
+});
 </script>
 </body>
 </html> 
