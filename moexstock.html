@@ -173,27 +173,25 @@
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
-            margin-bottom: 20px;
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 24px;
         }
-        
         .filter-group {
-            flex: 1;
-            min-width: 150px;
+            flex: 1 1 0;
+            min-width: 180px;
+            max-width: 100%;
         }
-        
-        .filter-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-            display: block;
+        .filter-input,
+        .filter-input-search,
+        .filter-input-points {
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
         }
-        
         .filter-input {
             width: 100%;
+            min-width: 80px;
+            max-width: 220px;
+            box-sizing: border-box;
             padding: 10px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -290,6 +288,11 @@
             
             .filter-group {
                 min-width: auto;
+                max-width: 100%;
+            }
+            .filter-input, .filter-input-search, .filter-input-points {
+                max-width: 100%;
+                min-width: 0;
             }
         }
         
@@ -308,6 +311,64 @@
                 min-width: 30px;
             }
         }
+        .filter-input-search {
+            max-width: 220px;
+        }
+        .filter-input-points {
+            max-width: 220px;
+        }
+        @media (max-width: 1100px) {
+            .filter-group {
+                min-width: 120px;
+            }
+        }
+        @media (max-width: 900px) {
+            .filters-container {
+                flex-direction: column;
+            }
+            .filter-group {
+                max-width: 100%;
+                min-width: 0;
+            }
+        }
+        .ticker-link {
+            color: #888;
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            .filters-container .filter-label {
+                display: none;
+            }
+            .filters-container {
+                gap: 8px;
+            }
+            .filter-group {
+                margin-bottom: 0;
+            }
+            .filter-input,
+            .filter-input-search,
+            .filter-input-points,
+            input[type="text"].filter-input,
+            input[type="number"].filter-input,
+            select.filter-input {
+                font-size: 15px !important;
+                height: 44px !important;
+                padding: 0 10px !important;
+                border-radius: 8px !important;
+                background: rgba(255,255,255,0.05) !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                color: var(--text) !important;
+                box-sizing: border-box !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -324,7 +385,7 @@
         <div class="filters-container">
             <div class="filter-group">
                 <label class="filter-label">Поиск по названию</label>
-                <input type="text" id="search-input" class="filter-input" placeholder="Введите название или тикер">
+                <input type="text" id="search-input" class="filter-input filter-input-search" placeholder="Название или тикер">
             </div>
             <div class="filter-group">
                 <label class="filter-label">Изменение (пункты)</label>
@@ -336,7 +397,7 @@
             </div>
             <div class="filter-group">
                 <label class="filter-label">Мин. пунктов</label>
-                <input type="number" id="points-min" class="filter-input" placeholder="От">
+                <input type="number" id="points-min" class="filter-input filter-input-points" placeholder="Мин. пунктов">
             </div>
         </div>
         
@@ -346,10 +407,13 @@
                     <tr>
                         <th id="sort-ticker" data-sort="ticker" data-order="asc">Тикер <span class="sort-icon">▼</span></th>
                         <th id="sort-name" data-sort="name" data-order="none">Название</th>
-                        <th id="sort-price" data-sort="price" data-order="none">Цена (₽)</th>
+                        <th id="sort-price" data-sort="price" data-order="none">Цена (₽)<br><span style="font-size:10px;color:#aaa;font-weight:normal;">задержка ~15 мин</span></th>
                         <th id="sort-step" data-sort="step" data-order="none">Шаг цены (₽)</th>
+                        <th id="sort-percent-from-open" data-sort="percentFromOpen" data-order="none">% от открытия</th>
                         <th id="sort-points" data-sort="points" data-order="desc">Пункты(цена) <span class="sort-icon">▼</span></th>
                         <th id="sort-points-per-hour" data-sort="pointsPerHour" data-order="none">Пунктов/час</th>
+                        <th id="sort-from-min" data-sort="fromMinPoints" data-order="none">От минимума</th>
+                        <th id="sort-from-max" data-sort="fromMaxPoints" data-order="none">От максимума</th>
                         <th id="sort-turnover" data-sort="turnover" data-order="none">Оборот (₽)</th>
                     </tr>
                 </thead>
@@ -438,12 +502,18 @@
                     
                     // Рассчитываем изменение в пунктах (правильный расчет)
                     const pointsChange = (price - open) / step;
+                    // % от открытия
+                    const percentFromOpen = open ? ((price - open) / open) * 100 : 0;
                     
                     // Рассчитываем среднее количество пунктов в час
                     const pointsPerHour = pointsChange / hoursPassed;
                     
                     // Рассчитываем максимальный диапазон в пунктах за день
                     const dayRangePoints = (high - low) / step;
+                    
+                    // Новые колонки: от минимума и от максимума
+                    const fromMinPoints = Math.round((price - low) / step);
+                    const fromMaxPoints = Math.round((price - high) / step);
                     
                     return {
                         ticker,
@@ -455,8 +525,11 @@
                         turnover,
                         step,
                         points: Math.round(pointsChange),
+                        percentFromOpen: percentFromOpen,
                         pointsPerHour: pointsPerHour.toFixed(1),
-                        dayRangePoints: Math.round(dayRangePoints)
+                        dayRangePoints: Math.round(dayRangePoints),
+                        fromMinPoints,
+                        fromMaxPoints
                     };
                 }).filter(stock => stock !== null);
                 
@@ -547,19 +620,27 @@
                 const pointsSign = stock.points > 0 ? '+' : '';
                 const pointsPerHourClass = stock.pointsPerHour > 0 ? 'up' : 'down';
                 const pointsPerHourSign = stock.pointsPerHour > 0 ? '+' : '';
-                
+                const fromMinClass = stock.fromMinPoints > 0 ? 'up' : (stock.fromMinPoints < 0 ? 'down' : '');
+                const fromMinSign = stock.fromMinPoints > 0 ? '+' : '';
+                const fromMaxClass = stock.fromMaxPoints > 0 ? 'up' : (stock.fromMaxPoints < 0 ? 'down' : '');
+                const fromMaxSign = stock.fromMaxPoints > 0 ? '+' : '';
+                const percentFromOpenClass = stock.percentFromOpen > 0 ? 'up' : (stock.percentFromOpen < 0 ? 'down' : '');
+                const percentFromOpenSign = stock.percentFromOpen > 0 ? '+' : '';
                 html += `
                     <tr>
-                        <td class="ticker">${stock.ticker}</td>
+                        <td class="ticker ticker-link" title="Открыть график на TradingView" style="cursor:pointer;" onclick="window.open('https://www.tradingview.com/chart/?symbol=MOEX:${stock.ticker}','_blank')">${stock.ticker}</td>
                         <td title="${stock.name}">${truncateText(stock.name, 25)}</td>
                         <td>${stock.price.toFixed(2)}</td>
                         <td>${stock.step.toFixed(4)}</td>
+                        <td class="${percentFromOpenClass}">${percentFromOpenSign}${stock.percentFromOpen.toFixed(2)}%</td>
                         <td class="${pointsClass}">
                             ${pointsSign}${stock.points} (${(stock.points * stock.step).toFixed(2)} ₽)
                         </td>
                         <td class="${pointsPerHourClass}">
                             ${pointsPerHourSign}${stock.pointsPerHour}
                         </td>
+                        <td class="${fromMinClass}">${fromMinSign}${stock.fromMinPoints}</td>
+                        <td class="${fromMaxClass}">${fromMaxSign}${stock.fromMaxPoints}</td>
                         <td>${formatCurrency(stock.turnover)}</td>
                     </tr>
                 `;
@@ -724,8 +805,11 @@
             document.getElementById('sort-name').addEventListener('click', () => sortByColumn('sort-name'));
             document.getElementById('sort-price').addEventListener('click', () => sortByColumn('sort-price'));
             document.getElementById('sort-step').addEventListener('click', () => sortByColumn('sort-step'));
+            document.getElementById('sort-percent-from-open').addEventListener('click', () => sortByColumn('sort-percent-from-open'));
             document.getElementById('sort-points').addEventListener('click', () => sortByColumn('sort-points'));
             document.getElementById('sort-points-per-hour').addEventListener('click', () => sortByColumn('sort-points-per-hour'));
+            document.getElementById('sort-from-min').addEventListener('click', () => sortByColumn('sort-from-min'));
+            document.getElementById('sort-from-max').addEventListener('click', () => sortByColumn('sort-from-max'));
             document.getElementById('sort-turnover').addEventListener('click', () => sortByColumn('sort-turnover'));
         }
 
