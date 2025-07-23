@@ -412,6 +412,42 @@
 </div>
 <!-- Кнопка "Изменить выбор" -->
 <button id="change-choice-btn" style="display:none;position:fixed;top:22px;right:22px;z-index:1100;padding:10px 22px;font-size:15px;font-weight:bold;border-radius:10px;border:none;background:linear-gradient(90deg,#4CAF50,#8BC34A);color:#fff;box-shadow:0 2px 8px #0005;cursor:pointer;">Изменить выбор</button>
+<!-- Модальное окно инструкции -->
+<div id="how-it-works-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(18,18,18,0.98);z-index:2000;align-items:center;justify-content:center;overflow-y:auto;">
+  <div style="background:#232629;padding:32px 28px 24px 28px;border-radius:18px;box-shadow:0 8px 32px #000a;min-width:320px;max-width:90vw;max-height:90vh;overflow-y:auto;position:relative;">
+    <button id="close-how-it-works" style="position:absolute;top:12px;right:16px;font-size:22px;background:none;border:none;color:#8BC34A;cursor:pointer;">×</button>
+    <h2 style="margin-top:0;text-align:center;font-size:22px;color:#8BC34A;">Как работает страница MOEX Weekly Gainers?</h2>
+    <div style="font-size:16px;line-height:1.7;color:#e0e0e0;max-height:65vh;overflow-y:auto;">
+      <ol style="padding-left:18px;">
+        <li><b>Выберите направление (лонг/шорт) и условие отбора.</b></li>
+        <li>Страница анализирует все тикеры MOEX (акции, фьючерсы, валюты) по выбранному режиму:
+          <ul>
+            <li><b>Классика:</b> сравниваются закрытия двух последних недель. Если закрытие недели 2 выше недели 1 (или ниже — для шорта), тикер попадает в список. Если не прошло по закрытию, но текущая цена пробила high/low недели 2 — тикер тоже попадёт в список.</li>
+            <li><b>Breakout по high/low недели 1:</b> сравнивается закрытие недели 2 с high/low недели 1. Аналогично, breakout — если текущая цена пробила high/low недели 1.</li>
+            <li><b>Breakout по экстремуму за 6 месяцев:</b> сравнивается закрытие недели 2 с экстремумом за 6 месяцев (без учёта самой последней недели). Если не прошло по закрытию, но текущая цена пробила экстремум — тикер попадёт в список.<br>
+            Если экстремум был обновлён именно на последней неделе, строка будет выделена цветом: зелёная для лонга, красная для шорта.</li>
+          </ul>
+        </li>
+        <li>В режиме 6 месяцев:
+          <ul>
+            <li>Экстремум считается только по 26 неделям ДО последней завершённой недели.</li>
+            <li>Тикер попадает в список, если закрытие недели 2 или текущая цена превысили экстремум (лонг) или пробили минимум (шорт).</li>
+            <li>Если экстремум был обновлён именно на последней неделе, строка будет выделена цветом: зелёная для лонга, красная для шорта.</li>
+            <li>Текущая цена подсвечивается красным, если она ниже закрытия недели 2 (лонг) или выше (шорт).</li>
+          </ul>
+        </li>
+        <li><b>Жёлтым цветом выделяются тикеры, где текущая цена пробила экстремум, high/low недели 1 или недели 2 (breakout).</b></li>
+        <li>Можно фильтровать по типу инструмента: Акции, Фьючерсы, Валюта.</li>
+        <li>Кнопка <b>Глубокий анализ</b> показывает только тикеры с полной историей за 6 месяцев (26 недель).</li>
+        <li>Клик по тикеру открывает график на TradingView.</li>
+        <li>Цены обновляются автоматически каждые 5 секунд.</li>
+      </ol>
+      <div style="margin-top:10px;font-size:15px;color:#8BC34A;">Если у вас есть предложения по улучшению — пишите!<br>
+        <a href="https://t.me/CtrlC_winR_CtrlV" target="_blank" style="color:#40b3e0;text-decoration:underline;font-weight:bold;">@CtrlC_winR_CtrlV (Telegram)</a>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
 const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
@@ -554,9 +590,10 @@ function formatPriceDynamic(val) {
     return val;
 }
 
-document.getElementById('how-it-works').onclick = function() {
-    window.open('how-it-works.html', '_blank');
-};
+// Удаляю обработчик открытия новой вкладки для 'Как работает?'
+// document.getElementById('how-it-works').onclick = function() {
+//     window.open('how-it-works.html', '_blank');
+// };
 
 const TRADINGVIEW_TICKER_MAP = {
     // Пример: 'SBER': 'MOEX:SBERP',
@@ -709,23 +746,8 @@ function renderTable(gainers) {
             const tdLast = document.createElement('td');
             tdLast.textContent = formatPriceDynamic(g.last_close);
             tr.appendChild(tdLast);
-            const tdPrice = document.createElement('td');
-            tdPrice.textContent = formatPriceDynamic(g.price);
-            if (g._breakout) tdPrice.className = 'price-green';
-            tr.appendChild(tdPrice);
-            const tdComment = document.createElement('td');
-            if ((g.data_weeks && g.data_weeks >= 24) || (g.data_months && g.data_months >= 6)) {
-                tdComment.textContent = 'Данные за 6 мес.';
-            } else if (g.data_weeks && g.data_weeks < 24) {
-                tdComment.textContent = `Данные только за ${g.data_weeks} недель`;
-            } else if (g.data_months && g.data_months < 6) {
-                tdComment.textContent = `Данные только за ${g.data_months} мес.`;
-            } else {
-                tdComment.textContent = '';
-            }
-            tr.appendChild(tdComment);
         } else if (userCondition === 1 && userDirection === 'long') {
-            // Breakout по high недели 1
+            // Классика: prev_close, last_close, high1, last_high
             const tdPrev = document.createElement('td');
             tdPrev.textContent = formatPriceDynamic(g.prev_close);
             tr.appendChild(tdPrev);
@@ -740,7 +762,7 @@ function renderTable(gainers) {
             tdHigh2.textContent = formatPriceDynamic(g.last_high);
             tr.appendChild(tdHigh2);
         } else if (userCondition === 1 && userDirection === 'short') {
-            // Breakout по low недели 1
+            // Классика: prev_close, last_close, low1, last_low
             const tdPrev = document.createElement('td');
             tdPrev.textContent = formatPriceDynamic(g.prev_close);
             tr.appendChild(tdPrev);
@@ -755,7 +777,7 @@ function renderTable(gainers) {
             tdLow2.textContent = formatPriceDynamic(g.last_low);
             tr.appendChild(tdLow2);
         } else {
-            // Классика
+            // Классика: prev_close, last_close, last_high/last_low
             const tdPrev = document.createElement('td');
             tdPrev.textContent = formatPriceDynamic(g.prev_close);
             tr.appendChild(tdPrev);
@@ -766,16 +788,17 @@ function renderTable(gainers) {
             tdHighLow.textContent = userDirection === 'long' ? formatPriceDynamic(g.last_high) : formatPriceDynamic(g.last_low);
             tr.appendChild(tdHighLow);
         }
-        // Последняя цена
+        // Последняя цена (универсально для всех режимов)
         const tdPrice = document.createElement('td');
         if (g.price !== undefined && g.price !== null) {
             tdPrice.textContent = formatPriceDynamic(g.price);
             if (userCondition === 2) {
-                // 6 месяцев: сравниваем с экстремумом
                 if ((userDirection === 'long' && g.price > g.extremum) || (userDirection === 'short' && g.price < g.extremum)) {
                     tdPrice.className = 'price-green';
-                } else {
+                } else if ((userDirection === 'long' && g.price < g.last_close) || (userDirection === 'short' && g.price > g.last_close)) {
                     tdPrice.className = 'price-red';
+                } else {
+                    tdPrice.className = 'price-gray';
                 }
             } else if (userCondition === 1 && userDirection === 'long') {
                 if (g.price > g.high1) tdPrice.className = 'price-green';
@@ -800,20 +823,47 @@ function renderTable(gainers) {
             tdPrice.textContent = '-';
         }
         tr.appendChild(tdPrice);
-        // После формирования строки выравниваем количество td
+        // Комментарий только для 6 месяцев
+        if (userCondition === 2) {
+            const tdComment = document.createElement('td');
+            if ((g.data_weeks && g.data_weeks >= 24) || (g.data_months && g.data_months >= 6)) {
+                tdComment.textContent = 'Данные за 6 мес.';
+            } else if (g.data_weeks && g.data_weeks < 24) {
+                tdComment.textContent = `Данные только за ${g.data_weeks} недель`;
+            } else if (g.data_months && g.data_months < 6) {
+                tdComment.textContent = `Данные только за ${g.data_months} мес.`;
+            } else {
+                tdComment.textContent = '';
+            }
+            tr.appendChild(tdComment);
+        }
+        // Выравнивание количества td
         while (tr.children.length < thCount) tr.appendChild(document.createElement('td'));
         while (tr.children.length > thCount) tr.removeChild(tr.lastChild);
         tbody.appendChild(tr);
     }
 }
 // === ДОБАВЛЕНО: обработчик фильтра типа ===
-document.getElementById('type-filter').addEventListener('change', function() {
-    if (deepModeToggle.checked) {
-        renderTable(filterDeep(allGainers));
-    } else {
-        renderTable(allGainers);
-    }
-});
+var typeFilterEl = document.getElementById('type-filter');
+if (typeFilterEl) {
+    typeFilterEl.addEventListener('change', function() {
+        if (typeof deepModeToggle !== 'undefined' && deepModeToggle && deepModeToggle.checked) {
+            renderTable(filterDeep(allGainers));
+        } else {
+            renderTable(allGainers);
+        }
+    });
+}
+var deepModeToggleEl = typeof deepModeToggle !== 'undefined' ? deepModeToggle : document.getElementById('deep-mode-toggle');
+if (deepModeToggleEl) {
+    deepModeToggleEl.addEventListener('change', function() {
+        if (deepModeToggleEl.checked) {
+            renderTable(filterDeep(allGainers));
+        } else {
+            renderTable(allGainers);
+        }
+    });
+}
 
 async function loadGainers() {
     console.log('[loadGainers] userDirection:', userDirection, 'userCondition:', userCondition, 'searchMode:', searchMode);
@@ -840,11 +890,11 @@ async function loadGainers() {
                 if (lastIdx < 0) { skipped++; checked++; return; }
                 const last = Object.fromEntries(columns.map((k,i)=>[k,candles[lastIdx][i]]));
                 g.last_close = parseFloat(last.close);
-                // Экстремум за доступный период
+                // Экстремум за доступный период (только по неделям ДО last_close)
                 let months = Math.round(candles.length / 4.33);
                 g.data_months = months;
                 if (userDirection === 'long') {
-                    let maxHigh = Math.max(...candles.slice(0, lastIdx+1).map(c=>c[columns.indexOf('high')]));
+                    let maxHigh = lastIdx > 0 ? Math.max(...candles.slice(0, lastIdx).map(c=>c[columns.indexOf('high')])) : undefined;
                     g.extremum = maxHigh;
                     // Получаем текущую цену
                     g.price = await getLastPrice(g.symbol, g.type);
@@ -855,7 +905,7 @@ async function loadGainers() {
                         all.push(g); found++;
                     }
                 } else {
-                    let minLow = Math.min(...candles.slice(0, lastIdx+1).map(c=>c[columns.indexOf('low')]));
+                    let minLow = lastIdx > 0 ? Math.min(...candles.slice(0, lastIdx).map(c=>c[columns.indexOf('low')])) : undefined;
                     g.extremum = minLow;
                     g.price = await getLastPrice(g.symbol, g.type);
                     if (g.last_close < minLow) {
@@ -1126,7 +1176,7 @@ changeChoiceBtn.onclick = () => {
     updateConditionDetails();
 };
 // Скрываем таблицу до выбора
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('.stocks-table-container').style.display = 'none';
   changeChoiceBtn.style.display = 'none';
   startDialog.style.display = 'flex';
@@ -1135,10 +1185,12 @@ window.addEventListener('DOMContentLoaded', () => {
 // Первый запуск
 loadGainers();
 // Кнопка обновления
-const refreshBtn = document.getElementById('refresh-btn');
-refreshBtn.addEventListener('click', () => {
-    loadGainers();
-});
+var refreshBtn = document.getElementById('refresh-btn');
+if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+        loadGainers();
+    });
+}
 // Автообновление цен раз в 5 секунд (только цены, не тикеры)
 setInterval(updatePrices, 5000);
 
@@ -1184,6 +1236,17 @@ document.addEventListener('DOMContentLoaded', function() {
       const btn = document.getElementById('change-choice-btn');
       if (btn && typeof btn.onclick === 'function') btn.onclick();
     };
+  }
+  var howItWorksBtn = document.getElementById('how-it-works');
+  var howItWorksModal = document.getElementById('how-it-works-modal');
+  var closeHowItWorks = document.getElementById('close-how-it-works');
+  if (howItWorksBtn && howItWorksModal && closeHowItWorks) {
+      howItWorksBtn.onclick = function() {
+          howItWorksModal.style.display = 'flex';
+      };
+      closeHowItWorks.onclick = function() {
+          howItWorksModal.style.display = 'none';
+      };
   }
 });
 </script>
