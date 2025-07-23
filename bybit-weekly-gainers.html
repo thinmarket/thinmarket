@@ -595,6 +595,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.stocks-table-container').style.display = 'none';
     changeChoiceBtn.style.display = 'none';
     startDialog.style.display = 'flex';
+    // Восстанавливаем обработчики модалки "Как работает?"
+    var howItWorksBtn = document.getElementById('how-it-works');
+    var howItWorksModal = document.getElementById('how-it-works-modal');
+    var closeHowItWorks = document.getElementById('close-how-it-works');
+    if (howItWorksBtn && howItWorksModal && closeHowItWorks) {
+        howItWorksBtn.onclick = function() {
+            howItWorksModal.style.display = 'flex';
+        };
+        closeHowItWorks.onclick = function() {
+            howItWorksModal.style.display = 'none';
+        };
+    }
 });
 // === ДИНАМИЧЕСКИЕ КОЛОНКИ ===
 function updateTableHeader() {
