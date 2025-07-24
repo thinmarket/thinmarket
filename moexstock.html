@@ -462,23 +462,60 @@
             }
         }
 
-        // ДОБАВЛЯЮ функцию для получения времени первой сделки тикера
-        async function getFirstTradeTime(ticker) {
+        // ДОБАВЛЯЮ функцию для получения времени первой сделки тикера с кэшированием и батчами
+        async function getFirstTradeTimeBatch(tickers, batchSize = 5, delayMs = 200) {
+            // Кэш в localStorage: ключ 'moex_first_trade_times', значение — объект { TICKER: { time, date } }
+            let cache = {};
             try {
-                const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}/trades.json?limit=1`;
-                const resp = await fetch(url);
-                const data = await resp.json();
-                if (!data.trades || !data.trades.data || data.trades.data.length === 0) return null;
-                const columns = data.trades.columns;
-                const timeIdx = columns.indexOf('TRADETIME');
-                if (timeIdx === -1) return null;
-                return data.trades.data[0][timeIdx];
-            } catch {
-                return null;
+                cache = JSON.parse(localStorage.getItem('moex_first_trade_times') || '{}');
+            } catch { cache = {}; }
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const result = {};
+            const toFetch = [];
+            // Сначала пробуем из кэша
+            for (const ticker of tickers) {
+                if (cache[ticker] && cache[ticker].date === today && cache[ticker].time) {
+                    result[ticker] = cache[ticker].time;
+                } else {
+                    toFetch.push(ticker);
+                }
             }
+            // Батчами по batchSize
+            for (let i = 0; i < toFetch.length; i += batchSize) {
+                const batch = toFetch.slice(i, i + batchSize);
+                await Promise.all(batch.map(async ticker => {
+                    try {
+                        const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}/trades.json?limit=1`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        let tradeTime = null;
+                        if (data.trades && data.trades.data && data.trades.data.length > 0) {
+                            const columns = data.trades.columns;
+                            const timeIdx = columns.indexOf('TRADETIME');
+                            if (timeIdx !== -1) {
+                                tradeTime = data.trades.data[0][timeIdx];
+                            }
+                        }
+                        result[ticker] = tradeTime;
+                        // Обновляем кэш
+                        cache[ticker] = { time: tradeTime, date: today };
+                    } catch {
+                        result[ticker] = null;
+                    }
+                }));
+                // Задержка между батчами
+                if (i + batchSize < toFetch.length) {
+                    await new Promise(res => setTimeout(res, delayMs));
+                }
+            }
+            // Сохраняем кэш
+            try {
+                localStorage.setItem('moex_first_trade_times', JSON.stringify(cache));
+            } catch {}
+            return result;
         }
 
-        // Модифицирую loadStocksData для честного расчёта пунктов/час
+        // Модифицирую loadStocksData для честного расчёта пунктов/час с батчами и кэшем
         async function loadStocksData() {
             try {
                 const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/${config.board}/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST,OPEN,LOW,HIGH,LASTTOPREVPRICE,VOLTODAY,VALTODAY`;
@@ -489,13 +526,10 @@
                 // Получаем текущее время для расчета часов торгов
                 const now = new Date();
                 const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-                // Для каждого тикера получаем время первой сделки
-                const firstTradeTimes = {};
-                await Promise.all(securities.map(async security => {
-                    const ticker = security[0];
-                    const tradeTime = await getFirstTradeTime(ticker);
-                    firstTradeTimes[ticker] = tradeTime;
-                }));
+                // Получаем список тикеров
+                const tickers = securities.map(security => security[0]);
+                // Получаем время первой сделки батчами с кэшем
+                const firstTradeTimes = await getFirstTradeTimeBatch(tickers, 5, 200);
                 allStocks = securities.map(security => {
                     const ticker = security[0];
                     const name = security[1];
