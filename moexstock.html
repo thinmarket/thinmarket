@@ -462,36 +462,46 @@
             }
         }
 
-        // Загрузка данных об акциях
+        // ДОБАВЛЯЮ функцию для получения времени первой сделки тикера
+        async function getFirstTradeTime(ticker) {
+            try {
+                const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${ticker}/trades.json?limit=1`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (!data.trades || !data.trades.data || data.trades.data.length === 0) return null;
+                const columns = data.trades.columns;
+                const timeIdx = columns.indexOf('TRADETIME');
+                if (timeIdx === -1) return null;
+                return data.trades.data[0][timeIdx];
+            } catch {
+                return null;
+            }
+        }
+
+        // Модифицирую loadStocksData для честного расчёта пунктов/час
         async function loadStocksData() {
             try {
                 const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/${config.board}/securities.json?iss.meta=off&securities.columns=SECID,SHORTNAME&marketdata.columns=SECID,LAST,OPEN,LOW,HIGH,LASTTOPREVPRICE,VOLTODAY,VALTODAY`;
                 const response = await fetch(url);
                 const data = await response.json();
-                
                 const securities = data.securities.data;
                 const marketData = data.marketdata.data;
-                
                 // Получаем текущее время для расчета часов торгов
                 const now = new Date();
                 const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-                const tradingStart = new Date(mskTime);
-                tradingStart.setHours(10, 0, 0, 0); // Начало торгов в 10:00 по МСК
-                
-                // Рассчитываем количество прошедших часов торгов
-                const hoursPassed = Math.max(1, Math.min(
-                    config.tradingHours, 
-                    (mskTime - tradingStart) / (1000 * 60 * 60)
-                ));
-                
+                // Для каждого тикера получаем время первой сделки
+                const firstTradeTimes = {};
+                await Promise.all(securities.map(async security => {
+                    const ticker = security[0];
+                    const tradeTime = await getFirstTradeTime(ticker);
+                    firstTradeTimes[ticker] = tradeTime;
+                }));
                 allStocks = securities.map(security => {
                     const ticker = security[0];
                     const name = security[1];
                     const stockData = marketData.find(item => item[0] === ticker);
-                    const step = stockSteps[ticker] || 0.01; // Используем шаг цены из загруженных данных
-                    
+                    const step = stockSteps[ticker] || 0.01;
                     if (!stockData || stockData[1] === null || stockData[2] === null) return null;
-                    
                     const price = stockData[1];
                     const open = stockData[2];
                     const low = stockData[3];
@@ -499,22 +509,25 @@
                     const changePercent = stockData[5];
                     const volume = stockData[6];
                     const turnover = stockData[7];
-                    
-                    // Рассчитываем изменение в пунктах (правильный расчет)
                     const pointsChange = (price - open) / step;
-                    // % от открытия
                     const percentFromOpen = open ? ((price - open) / open) * 100 : 0;
-                    
-                    // Рассчитываем среднее количество пунктов в час
-                    const pointsPerHour = pointsChange / hoursPassed;
-                    
-                    // Рассчитываем максимальный диапазон в пунктах за день
+                    // Новый расчёт пунктов/час
+                    let pointsPerHour = 0;
+                    const tradeTimeStr = firstTradeTimes[ticker];
+                    if (tradeTimeStr) {
+                        // tradeTimeStr формат HH:MM:SS
+                        const [h, m, s] = tradeTimeStr.split(':').map(Number);
+                        const tradeDate = new Date(mskTime);
+                        tradeDate.setHours(h, m, s, 0);
+                        let hoursPassed = (mskTime - tradeDate) / (1000 * 60 * 60);
+                        if (hoursPassed < 0.01) hoursPassed = 0.01; // чтобы не делить на 0
+                        pointsPerHour = pointsChange / hoursPassed;
+                    } else {
+                        pointsPerHour = 0;
+                    }
                     const dayRangePoints = (high - low) / step;
-                    
-                    // Новые колонки: от минимума и от максимума
                     const fromMinPoints = Math.round((price - low) / step);
                     const fromMaxPoints = Math.round((price - high) / step);
-                    
                     return {
                         ticker,
                         name,
@@ -532,9 +545,7 @@
                         fromMaxPoints
                     };
                 }).filter(stock => stock !== null);
-                
                 applyFilters();
-                
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
                 document.getElementById('stocks-table-body').innerHTML = `
@@ -618,8 +629,8 @@
             paginatedStocks.forEach(stock => {
                 const pointsClass = stock.points > 0 ? 'up' : 'down';
                 const pointsSign = stock.points > 0 ? '+' : '';
-                const pointsPerHourClass = stock.pointsPerHour > 0 ? 'up' : 'down';
-                const pointsPerHourSign = stock.pointsPerHour > 0 ? '+' : '';
+                const pointsPerHourClass = Number(stock.pointsPerHour) > 0 ? 'up' : 'down';
+                const pointsPerHourSign = Number(stock.pointsPerHour) > 0 ? '+' : '';
                 const fromMinClass = stock.fromMinPoints > 0 ? 'up' : (stock.fromMinPoints < 0 ? 'down' : '');
                 const fromMinSign = stock.fromMinPoints > 0 ? '+' : '';
                 const fromMaxClass = stock.fromMaxPoints > 0 ? 'up' : (stock.fromMaxPoints < 0 ? 'down' : '');
