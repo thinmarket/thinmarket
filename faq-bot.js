@@ -754,7 +754,7 @@ function handleOperatorRequest(question) {
           })
           .catch(err => {
             console.error("Operator request failed:", err);
-            showBotMessage("Ошибка отправки вопроса. Попробуйте позже.");
+            showBotMessage("Упс! Ошибка отправки вопроса. Что-то с сервером. Попробуйте ещё разок, я тогда точно отправлю ваш ник и вопрос оператору. Вам ответят в телеграм в ближайшее время");
           });
       } else {
         showBotMessage("Пожалуйста, опишите ваш вопрос подробнее перед указанием @username.");
