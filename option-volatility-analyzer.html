@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор Волатильности Опционов - Прогнозирование и Аномалии</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #232323;
+            color: #fff;
+        }
+        .container {
+            background: #2E2E2E;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        h2, h3 {
+            color: #fff;
+        }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #181818;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background: linear-gradient(135deg, #4CAF50, #2980b9);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #2980b9, #4CAF50);
+        }
+        .results-container {
+            margin-top: 25px;
+        }
+        .volatility-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .volatility-card {
+            background: #232323;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+            border-left: 6px solid #3498db;
+        }
+        .volatility-card.low-vol {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #1b2e1b, #232323);
+        }
+        .volatility-card.medium-vol {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #2e2a1b, #232323);
+        }
+        .volatility-card.high-vol {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #2e1b1b, #232323);
+        }
+        .volatility-card.anomaly {
+            border-left-color: #9b59b6;
+            background: linear-gradient(135deg, #2e1b2e, #232323);
+        }
+        .volatility-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .option-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .volatility-score {
+            background: #181818;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .score-low { color: #27ae60; }
+        .score-medium { color: #f39c12; }
+        .score-high { color: #e74c3c; }
+        .score-anomaly { color: #9b59b6; }
+        .volatility-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .volatility-item {
+            text-align: center;
+            padding: 10px;
+            background: #181818;
+            border-radius: 8px;
+        }
+        .volatility-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .volatility-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .volatility-status {
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .status-low {
+            background: #1b2e1b;
+            color: #27ae60;
+        }
+        .status-medium {
+            background: #2e2a1b;
+            color: #f39c12;
+        }
+        .status-high {
+            background: #2e1b1b;
+            color: #e74c3c;
+        }
+        .status-anomaly {
+            background: #2e1b2e;
+            color: #9b59b6;
+        }
+        .stats-bar {
+            background: #181818;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            color: #fff;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background: #232323;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.10);
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .warning-box {
+            background: #2e1b1b;
+            border: 1px solid #e74c3c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        .info-box {
+            background: #1b2e1b;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #27ae60;
+        }
+        .strategy-box {
+            background: #1b2e1b;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>📈 Анализатор Волатильности Опционов - Прогнозирование и Аномалии</h1>
+    
+    <div class="container">
+        <h2>🎯 Настройки анализа волатильности</h2>
+        
+        <div class="filters">
+            <div class="input-group">
+                <label for="assetCode">Код базового актива:</label>
+                <input type="text" id="assetCode" value="CNY" placeholder="Например: CNY, SI, SBER">
+            </div>
+            
+            <div class="input-group">
+                <label for="optionType">Тип опциона:</label>
+                <select id="optionType">
+                    <option value="call">CALL (Колл)</option>
+                    <option value="put">PUT (Пут)</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="minDays">Минимальное время до экспирации (дней):</label>
+                <input type="number" id="minDays" value="7" min="0" placeholder="Фильтр по времени">
+            </div>
+            
+            <div class="input-group">
+                <label for="volatilityThreshold">Порог аномальной волатильности (%):</label>
+                <input type="number" id="volatilityThreshold" value="70" min="0" placeholder="Порог для аномалий">
+            </div>
+        </div>
+        
+        <button onclick="analyzeVolatility()">🔍 Анализировать волатильность</button>
+        
+        <div class="info-box">
+            <strong>💡 Анализ волатильности:</strong> 
+            <ul>
+                <li><strong>Низкая волатильность</strong> - возможность покупки опционов дешево</li>
+                <li><strong>Высокая волатильность</strong> - возможность продажи опционов дорого</li>
+                <li><strong>Аномальная волатильность</strong> - потенциальные возможности для торговли</li>
+                <li><strong>Прогноз</strong> - ожидаемое изменение волатильности на основе греков</li>
+            </ul>
+        </div>
+        
+        <div id="stats" class="stats-bar" style="display: none;"></div>
+        <div id="results" class="results-container" style="display: none;"></div>
+    </div>
+
+    <script>
+        let allVolatilityData = [];
+
+        // Вспомогательная функция для определения типа опциона
+        function getOptionType(data) {
+            if (data.option_type) {
+                return data.option_type.toLowerCase();
+            }
+            const secid = data.secid || data;
+            const lastBIndex = secid.lastIndexOf('B');
+            const lastUIndex = secid.lastIndexOf('U');
+            return lastBIndex > lastUIndex ? 'call' : 'put';
+        }
+
+        async function makeRequest(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return { status: response.status, data: data };
+            } catch (error) {
+                return { status: 'ERROR', data: { error: error.message } };
+            }
+        }
+
+        function calculateVolatilityAnalysis(data) {
+            const volatility = data.volatility || 0;
+            const delta = Math.abs(data.delta || 0);
+            const gamma = Math.abs(data.gamma || 0);
+            const vega = Math.abs(data.vega || 0);
+            const theta = Math.abs(data.theta || 0);
+            const daysToExpiry = data.days_until_expiring || 0;
+            const theorPrice = data.theorprice || 0;
+            const underlyingPrice = data.underlying_price || 1;
+            
+            let analysis = {
+                currentVolatility: volatility,
+                volatilityCategory: '',
+                volatilityScore: 0,
+                anomalyScore: 0,
+                forecast: '',
+                strategy: '',
+                reasons: [],
+                riskLevel: '',
+                opportunity: ''
+            };
+
+            // Категоризация волатильности
+            if (volatility < 20) {
+                analysis.volatilityCategory = 'low';
+                analysis.volatilityScore = 25;
+                analysis.reasons.push("✅ Очень низкая волатильность - опционы дешевые");
+                analysis.opportunity = "Покупка опционов при ожидании роста волатильности";
+            } else if (volatility < 40) {
+                analysis.volatilityCategory = 'low-medium';
+                analysis.volatilityScore = 20;
+                analysis.reasons.push("✅ Низкая волатильность - умеренные цены");
+                analysis.opportunity = "Стратегии с ограниченным риском";
+            } else if (volatility < 60) {
+                analysis.volatilityCategory = 'medium';
+                analysis.volatilityScore = 15;
+                analysis.reasons.push("✅ Умеренная волатильность - стандартные условия");
+                analysis.opportunity = "Классические стратегии";
+            } else if (volatility < 80) {
+                analysis.volatilityCategory = 'high';
+                analysis.volatilityScore = 10;
+                analysis.reasons.push("⚠️ Высокая волатильность - дорогие опционы");
+                analysis.opportunity = "Продажа опционов при ожидании падения волатильности";
+            } else {
+                analysis.volatilityCategory = 'very-high';
+                analysis.volatilityScore = 5;
+                analysis.reasons.push("❌ Очень высокая волатильность - экстремальные цены");
+                analysis.opportunity = "Продажа волатильности, защитные стратегии";
+            }
+
+            // Анализ аномалий
+            const volatilityThreshold = parseInt(document.getElementById('volatilityThreshold').value) || 70;
+            if (volatility > volatilityThreshold) {
+                analysis.anomalyScore = 30;
+                analysis.reasons.push("🚨 АНОМАЛЬНАЯ ВОЛАТИЛЬНОСТЬ - торговые возможности!");
+            }
+
+            // Прогноз на основе греков
+            if (vega > 0.1 && gamma > 0.01) {
+                analysis.forecast = "📈 Ожидается рост волатильности (высокие Vega/Gamma)";
+                analysis.strategy = "Long Straddle/Strangle, покупка волатильности";
+            } else if (vega < 0.05 && gamma < 0.005) {
+                analysis.forecast = "📉 Ожидается падение волатильности (низкие Vega/Gamma)";
+                analysis.strategy = "Short Straddle/Strangle, продажа волатильности";
+            } else {
+                analysis.forecast = "➡️ Стабильная волатильность";
+                analysis.strategy = "Нейтральные стратегии, Iron Condor";
+            }
+
+            // Анализ риска
+            if (theta > 0.1 && daysToExpiry < 30) {
+                analysis.riskLevel = "Высокий риск временного затухания";
+                analysis.reasons.push("⚠️ Быстрое временное затухание (Theta)");
+            } else if (delta > 0.8 || delta < 0.2) {
+                analysis.riskLevel = "Экстремальная Delta - высокий риск";
+                analysis.reasons.push("⚠️ Экстремальная Delta - нестабильная позиция");
+            } else {
+                analysis.riskLevel = "Умеренный риск";
+            }
+
+            // Дополнительные факторы
+            const priceRatio = theorPrice / underlyingPrice;
+            if (priceRatio < 0.01) {
+                analysis.reasons.push("💡 Очень дешевый опцион - потенциал роста");
+            } else if (priceRatio > 0.2) {
+                analysis.reasons.push("💡 Дорогой опцион - потенциал падения");
+            }
+
+            return analysis;
+        }
+
+        function getVolatilityStatus(analysis) {
+            if (analysis.anomalyScore > 0) {
+                return {
+                    class: 'anomaly',
+                    status: '🚨 АНОМАЛЬНАЯ ВОЛАТИЛЬНОСТЬ',
+                    description: 'Уникальные торговые возможности'
+                };
+            } else if (analysis.currentVolatility < 30) {
+                return {
+                    class: 'low-vol',
+                    status: 'НИЗКАЯ ВОЛАТИЛЬНОСТЬ',
+                    description: 'Дешевые опционы, потенциал роста'
+                };
+            } else if (analysis.currentVolatility < 60) {
+                return {
+                    class: 'medium-vol',
+                    status: 'УМЕРЕННАЯ ВОЛАТИЛЬНОСТЬ',
+                    description: 'Стандартные условия торговли'
+                };
+            } else {
+                return {
+                    class: 'high-vol',
+                    status: 'ВЫСОКАЯ ВОЛАТИЛЬНОСТЬ',
+                    description: 'Дорогие опционы, потенциал падения'
+                };
+            }
+        }
+
+        async function analyzeVolatility() {
+            const assetCode = document.getElementById('assetCode').value.trim();
+            const optionType = document.getElementById('optionType').value;
+            const minDays = parseInt(document.getElementById('minDays').value) || 0;
+            
+            if (!assetCode) {
+                alert('Пожалуйста, введите код базового актива');
+                return;
+            }
+            
+            // Показываем загрузку
+            document.getElementById('results').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Анализируем волатильность опционов на ${assetCode}...
+                </div>
+            `;
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('stats').style.display = 'none';
+            
+            // Получаем список всех опционов
+            const optionsUrl = `https://iss.moex.com/iss/apps/option-calc/v1/assets/${assetCode}/options`;
+            const optionsResult = await makeRequest(optionsUrl);
+            
+            if (optionsResult.status !== 200) {
+                document.getElementById('results').innerHTML = `
+                    <h3>❌ Ошибка получения списка опционов</h3>
+                    <p>Статус: ${optionsResult.status}</p>
+                    <p>Ошибка: ${optionsResult.data.error || 'Неизвестная ошибка'}</p>
+                `;
+                return;
+            }
+            
+            // Фильтруем опционы по типу
+            const filteredOptions = optionsResult.data.filter(option => {
+                const optionTypeFromAPI = option.option_type ? option.option_type.toLowerCase() : null;
+                
+                if (optionTypeFromAPI) {
+                    return optionTypeFromAPI === optionType;
+                } else {
+                    const optionTypeFromSecid = getOptionType(option.secid);
+                    return optionTypeFromSecid === optionType;
+                }
+            });
+            
+            console.log(`Найдено ${filteredOptions.length} ${optionType.toUpperCase()} опционов`);
+            
+            // Анализируем волатильность каждого опциона
+            allVolatilityData = [];
+            let processedCount = 0;
+            
+            for (const option of filteredOptions) {
+                const detailUrl = `https://iss.moex.com/iss/apps/option-calc/v1/assets/${assetCode}/options/${option.secid}`;
+                const detailResult = await makeRequest(detailUrl);
+                
+                if (detailResult.status === 200) {
+                    const volatilityAnalysis = calculateVolatilityAnalysis(detailResult.data);
+                    const volatilityStatus = getVolatilityStatus(volatilityAnalysis);
+                    
+                    // Фильтруем по минимальному времени до экспирации
+                    if (detailResult.data.days_until_expiring >= minDays) {
+                        allVolatilityData.push({
+                            ...detailResult.data,
+                            volatility: volatilityAnalysis,
+                            status: volatilityStatus
+                        });
+                    }
+                }
+                
+                processedCount++;
+                // Обновляем прогресс
+                if (processedCount % 10 === 0) {
+                    document.getElementById('results').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Обработано ${processedCount} из ${filteredOptions.length} опционов...
+                        </div>
+                    `;
+                }
+            }
+            
+            // Сортируем по аномальности и волатильности
+            allVolatilityData.sort((a, b) => {
+                // Сначала аномалии, потом по волатильности
+                if (a.volatility.anomalyScore > 0 && b.volatility.anomalyScore === 0) return -1;
+                if (a.volatility.anomalyScore === 0 && b.volatility.anomalyScore > 0) return 1;
+                return b.volatility.currentVolatility - a.volatility.currentVolatility;
+            });
+            
+            displayVolatilityResults();
+        }
+
+        function displayVolatilityResults() {
+            const assetCode = document.getElementById('assetCode').value.trim();
+            const optionType = document.getElementById('optionType').value;
+            const minDays = parseInt(document.getElementById('minDays').value) || 0;
+            
+            // Статистика
+            const totalOptions = allVolatilityData.length;
+            const anomalies = allVolatilityData.filter(o => o.volatility.anomalyScore > 0).length;
+            const lowVol = allVolatilityData.filter(o => o.volatility.currentVolatility < 30).length;
+            const highVol = allVolatilityData.filter(o => o.volatility.currentVolatility > 60).length;
+            const avgVol = allVolatilityData.reduce((sum, o) => sum + o.volatility.currentVolatility, 0) / totalOptions;
+            
+            let statsHtml = `
+                <h3>📊 Статистика волатильности</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${totalOptions}</div>
+                        <div class="stat-label">Всего опционов (дней ≥ ${minDays})</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #9b59b6;">${anomalies}</div>
+                        <div class="stat-label">Аномальная волатильность</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #27ae60;">${lowVol}</div>
+                        <div class="stat-label">Низкая волатильность (<30%)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" style="color: #e74c3c;">${highVol}</div>
+                        <div class="stat-label">Высокая волатильность (>60%)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${avgVol.toFixed(1)}%</div>
+                        <div class="stat-label">Средняя волатильность</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('stats').innerHTML = statsHtml;
+            document.getElementById('stats').style.display = 'block';
+            
+            // Список опционов
+            let resultsHtml = `
+                <h3>🏆 Анализ волатильности опционов ${assetCode} ${optionType.toUpperCase()}</h3>
+                <div class="info-box">
+                    <strong>💡 Стратегии торговли волатильностью:</strong><br>
+                    • <strong>Низкая волатильность</strong> → Long Straddle/Strangle (ожидание роста)<br>
+                    • <strong>Высокая волатильность</strong> → Short Straddle/Strangle (ожидание падения)<br>
+                    • <strong>Аномальная волатильность</strong> → Уникальные возможности для торговли
+                </div>
+                <div class="volatility-grid">
+            `;
+            
+            allVolatilityData.forEach((option, index) => {
+                const scoreClass = option.volatility.anomalyScore > 0 ? 'score-anomaly' : 
+                                 option.volatility.currentVolatility < 30 ? 'score-low' : 
+                                 option.volatility.currentVolatility < 60 ? 'score-medium' : 'score-high';
+                const statusClass = option.status.class;
+                const statusTextClass = `status-${option.status.class.replace('-vol', '')}`;
+                
+                // Форматируем дату погашения
+                const expirationDate = option.expiring_date ? 
+                    new Date(option.expiring_date).toLocaleDateString('ru-RU', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: '2-digit' 
+                    }) : 'N/A';
+                
+                resultsHtml += `
+                    <div class="volatility-card ${statusClass}">
+                        <div class="volatility-header">
+                            <div class="option-title">#${index + 1} ${option.secid} <span style="color: #7f8c8d; font-size: 14px;">(${expirationDate})</span></div>
+                            <div class="volatility-score ${scoreClass}">${option.volatility.currentVolatility.toFixed(1)}%</div>
+                        </div>
+                        
+                        <div class="volatility-details">
+                            <div class="volatility-item">
+                                <div class="volatility-value">${option.volatility.currentVolatility.toFixed(1)}%</div>
+                                <div class="volatility-label">Волатильность</div>
+                            </div>
+                            <div class="volatility-item">
+                                <div class="volatility-value">${Math.abs(option.delta || 0).toFixed(3)}</div>
+                                <div class="volatility-label">Delta</div>
+                            </div>
+                            <div class="volatility-item">
+                                <div class="volatility-value">${Math.abs(option.vega || 0).toFixed(3)}</div>
+                                <div class="volatility-label">Vega</div>
+                            </div>
+                            <div class="volatility-item">
+                                <div class="volatility-value">${Math.abs(option.gamma || 0).toFixed(4)}</div>
+                                <div class="volatility-label">Gamma</div>
+                            </div>
+                        </div>
+                        
+                        <div class="volatility-status ${statusTextClass}">
+                            ${option.status.status}
+                        </div>
+                        
+                        <div class="strategy-box">
+                            <strong>📈 Прогноз:</strong> ${option.volatility.forecast}<br>
+                            <strong>🎯 Стратегия:</strong> ${option.volatility.strategy}<br>
+                            <strong>💡 Возможность:</strong> ${option.volatility.opportunity}
+                        </div>
+                        
+                        <div style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
+                            <strong>Обоснование:</strong><br>
+                            ${option.volatility.reasons.slice(0, 2).join(', ')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsHtml += '</div>';
+            
+            if (allVolatilityData.length === 0) {
+                resultsHtml = `
+                    <div class="info-box">
+                        <h3>📋 Результаты анализа</h3>
+                        <p><strong>Не найдено опционов</strong> с временем до экспирации ≥ ${minDays} дней.</p>
+                        <p>Попробуйте:</p>
+                        <ul>
+                            <li>Уменьшить минимальное время до экспирации</li>
+                            <li>Проверить другой базовый актив</li>
+                            <li>Выбрать другой тип опциона</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('results').innerHTML = resultsHtml;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор Цен для Неликвидных Опционов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #232323;
+            color: #fff;
+        }
+        .container {
+            background: #2E2E2E;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .step-container {
+            background: #232323;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #444;
+            margin-bottom: 20px;
+        }
+        .step-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #181818;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background: linear-gradient(135deg, #4CAF50, #2980b9);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #2980b9, #4CAF50);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .option-card {
+            background: #232323;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76,175,80,0.18);
+        }
+        .option-card.selected {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #1b2e1b, #232323);
+        }
+        .option-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .option-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 6px;
+        }
+        .option-item-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .option-item-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 3px;
+        }
+        .price-card {
+            background: #232323;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 6px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+        }
+        .price-card.buy {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #1b2e1b, #232323);
+        }
+        .price-card.sell {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #2e1b1b, #232323);
+        }
+        .price-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .price-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .price-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .price-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .price-item {
+            text-align: center;
+            padding: 10px;
+            background: #181818;
+            border-radius: 8px;
+        }
+        .price-item-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .price-item-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .strategy-box {
+            background: #1b2e1b;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #27ae60;
+        }
+        .warning-box {
+            background: #2e1b1b;
+            border: 1px solid #e74c3c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        .info-box {
+            background: #1b2e1b;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #27ae60;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4CAF50;
+            font-style: italic;
+        }
+        .error {
+            background: #2e1b1b;
+            border: 1px solid #e74c3c;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        .success {
+            background: #1b2e1b;
+            border: 1px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #27ae60;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>💰 Калькулятор Цен для Неликвидных Опционов</h1>
+    
+    <div class="container">
+        <div class="info-box">
+            <strong>💡 Как использовать калькулятор:</strong><br>
+            • Выберите базовый актив из списка<br>
+            • Выберите опцион из доступных<br>
+            • Укажите покупка или продажа<br>
+            • Получите рекомендации по цене заявки для пустого стакана
+        </div>
+        
+        <!-- Шаг 1: Получение списка активов -->
+        <div class="step-container" id="step1">
+            <div class="step-title">
+                <div class="step-number">1</div>
+                Получение списка базовых активов
+            </div>
+            <button onclick="loadAssets()">📊 Загрузить список активов</button>
+        </div>
+        
+        <!-- Шаг 2: Выбор актива -->
+        <div class="step-container hidden" id="step2">
+            <div class="step-title">
+                <div class="step-number">2</div>
+                Выбор базового актива
+            </div>
+            <div class="input-group">
+                <label for="assetSelect">Выберите базовый актив:</label>
+                <select id="assetSelect" onchange="onAssetSelected()">
+                    <option value="">Выберите актив...</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Шаг 3: Получение списка опционов -->
+        <div class="step-container hidden" id="step3">
+            <div class="step-title">
+                <div class="step-number">3</div>
+                Загрузка опционов для выбранного актива
+            </div>
+            <button onclick="loadOptions()">📈 Загрузить опционы</button>
+        </div>
+        
+        <!-- Шаг 4: Выбор опциона -->
+        <div class="step-container hidden" id="step4">
+            <div class="step-title">
+                <div class="step-number">4</div>
+                Выбор опциона
+            </div>
+            <div class="input-group">
+                <label for="optionSelect">Выберите опцион:</label>
+                <select id="optionSelect" onchange="onOptionSelected()">
+                    <option value="">Выберите опцион...</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Шаг 5: Выбор операции -->
+        <div class="step-container hidden" id="step5">
+            <div class="step-title">
+                <div class="step-number">5</div>
+                Выбор операции
+            </div>
+            <div class="input-group">
+                <label for="operationSelect">Выберите операцию:</label>
+                <select id="operationSelect" onchange="onOperationSelected()">
+                    <option value="">Выберите операцию...</option>
+                    <option value="buy">Покупка (BUY)</option>
+                    <option value="sell">Продажа (SELL)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Шаг 6: Анализ и расчет цены -->
+        <div class="step-container hidden" id="step6">
+            <div class="step-title">
+                <div class="step-number">6</div>
+                Анализ и расчет рекомендуемой цены
+            </div>
+            <button onclick="calculatePrice()">💰 Рассчитать цену заявки</button>
+            <div id="priceResults"></div>
+        </div>
+    </div>
+
+    <script>
+        let assetsList = [];
+        let optionsList = [];
+        let selectedAsset = null;
+        let selectedOption = null;
+        let selectedOperation = null;
+        let optionDetails = null;
+
+        // Функция для выполнения запросов к API
+        async function makeRequest(url) {
+            try {
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                return { success: true, data: data };
+                
+            } catch (error) {
+                console.error('Ошибка запроса:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Шаг 1: Загрузка списка активов
+        async function loadAssets() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ Загрузка...';
+            button.disabled = true;
+            
+            try {
+                const result = await makeRequest('https://iss.moex.com/iss/apps/option-calc/v1/assets');
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                assetsList = result.data;
+                console.log('Загружено активов:', assetsList.length);
+                
+                // Показываем список активов
+                displayAssets(assetsList);
+                
+                // Показываем следующий шаг
+                document.getElementById('step2').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Ошибка загрузки активов:', error);
+                document.getElementById('priceResults').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Ошибка загрузки активов:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Отображение списка активов
+        function displayAssets(assets) {
+            const assetSelect = document.getElementById('assetSelect');
+            // Очищаем select
+            assetSelect.innerHTML = '<option value="">Выберите актив...</option>';
+            assets.forEach(asset => {
+                const option = document.createElement('option');
+                option.value = asset.asset_code;
+                option.textContent = `${asset.asset_code} (${asset.asset_type})`;
+                assetSelect.appendChild(option);
+            });
+        }
+
+        // Шаг 2: Выбор актива
+        function onAssetSelected() {
+            selectedAsset = document.getElementById('assetSelect').value;
+            
+            if (selectedAsset) {
+                console.log('Выбран актив:', selectedAsset);
+                document.getElementById('step3').classList.remove('hidden');
+            }
+        }
+
+        // Шаг 3: Загрузка опционов
+        async function loadOptions() {
+            if (!selectedAsset) {
+                alert('Сначала выберите базовый актив');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ Загрузка...';
+            button.disabled = true;
+            
+            try {
+                const result = await makeRequest(`https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options`);
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                optionsList = result.data;
+                console.log(`Загружено опционов для ${selectedAsset}:`, optionsList.length);
+                
+                // Показываем список опционов
+                displayOptions(optionsList);
+                
+                // Показываем следующий шаг
+                document.getElementById('step4').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Ошибка загрузки опционов:', error);
+                document.getElementById('priceResults').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Ошибка загрузки опционов:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Отображение списка опционов
+        function displayOptions(options) {
+            const optionSelect = document.getElementById('optionSelect');
+            // Очищаем select
+            optionSelect.innerHTML = '<option value="">Выберите опцион...</option>';
+            options.forEach(option => {
+                const expirationDate = option.expiration_date ? new Date(option.expiration_date).toLocaleDateString('ru-RU') : 'N/A';
+                const optionElement = document.createElement('option');
+                optionElement.value = option.secid;
+                optionElement.textContent = `${option.secid} - ${option.option_type.toUpperCase()} (${option.strike}) - ${expirationDate}`;
+                optionSelect.appendChild(optionElement);
+            });
+        }
+
+        // Шаг 4: Выбор опциона
+        function onOptionSelected() {
+            selectedOption = document.getElementById('optionSelect').value;
+            
+            if (selectedOption) {
+                console.log('Выбран опцион:', selectedOption);
+                document.getElementById('step5').classList.remove('hidden');
+            }
+        }
+
+        // Шаг 5: Выбор операции
+        function onOperationSelected() {
+            selectedOperation = document.getElementById('operationSelect').value;
+            
+            if (selectedOperation) {
+                console.log('Выбрана операция:', selectedOperation);
+                document.getElementById('step6').classList.remove('hidden');
+            }
+        }
+
+        // Шаг 6: Расчет цены
+        async function calculatePrice() {
+            if (!selectedAsset || !selectedOption || !selectedOperation) {
+                alert('Пожалуйста, завершите все предыдущие шаги');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ Расчет...';
+            button.disabled = true;
+            
+            try {
+                // Получаем детальные данные опциона
+                const result = await makeRequest(`https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options/${selectedOption}`);
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                optionDetails = result.data;
+                console.log('Детали опциона:', optionDetails);
+                
+                // Рассчитываем рекомендуемую цену
+                const priceAnalysis = analyzePrice(optionDetails, selectedOperation);
+                
+                // Отображаем результаты
+                displayPriceResults(priceAnalysis);
+                
+            } catch (error) {
+                console.error('Ошибка расчета цены:', error);
+                document.getElementById('priceResults').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Ошибка расчета цены:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Анализ цены для неликвидного опциона
+        function analyzePrice(optionData, operation) {
+            const theoreticalPrice = optionData.theorprice || 0;
+            const volatility = optionData.volatility || 0;
+            const daysToExpiry = optionData.days_until_expiring || 0;
+            const underlyingPrice = optionData.underlying_price || 0;
+            const strike = optionData.strike || 0;
+            const optionType = optionData.option_type || 'call';
+            
+            // Базовые корректировки для неликвидности
+            let baseAdjustment = 0.15; // 15% базовая корректировка
+            
+            // Корректировка по волатильности
+            if (volatility < 0.3) {
+                baseAdjustment += 0.10; // +10% для низкой волатильности
+            } else if (volatility > 0.7) {
+                baseAdjustment -= 0.05; // -5% для высокой волатильности
+            }
+            
+            // Корректировка по времени до экспирации
+            if (daysToExpiry < 7) {
+                baseAdjustment += 0.20; // +20% для коротких сроков
+            } else if (daysToExpiry > 60) {
+                baseAdjustment -= 0.05; // -5% для длинных сроков
+            }
+            
+            // Корректировка по денежности
+            const moneyness = calculateMoneyness(underlyingPrice, strike, optionType);
+            if (Math.abs(moneyness) > 0.1) {
+                baseAdjustment += 0.10; // +10% для глубоко OTM/ITM
+            }
+            
+            // Корректировка по операции
+            if (operation === 'buy') {
+                // Для покупки - начинаем с низкой цены (выгодно для покупателя)
+                const aggressivePrice = theoreticalPrice * (1 - baseAdjustment * 0.7); // Попытка купить дешево
+                const moderatePrice = theoreticalPrice * (1 + baseAdjustment * 0.3);   // Если не получилось
+                
+                return {
+                    operation: 'buy',
+                    theoreticalPrice: theoreticalPrice,
+                    recommendedPrice: aggressivePrice,  // Начинаем с агрессивной цены
+                    alternativePrice: moderatePrice,   // Альтернатива - умеренная цена
+                    adjustment: baseAdjustment,
+                    analysis: {
+                        volatility: volatility,
+                        daysToExpiry: daysToExpiry,
+                        moneyness: moneyness,
+                        optionType: optionType
+                    }
+                };
+            } else {
+                // Для продажи - начинаем с высокой цены (выгодно для продавца)
+                const aggressivePrice = theoreticalPrice * (1 + baseAdjustment * 0.7); // Попытка продать дорого
+                const moderatePrice = theoreticalPrice * (1 - baseAdjustment * 0.3);   // Если не получилось
+                
+                return {
+                    operation: 'sell',
+                    theoreticalPrice: theoreticalPrice,
+                    recommendedPrice: aggressivePrice,  // Начинаем с агрессивной цены
+                    alternativePrice: moderatePrice,   // Альтернатива - умеренная цена
+                    adjustment: baseAdjustment,
+                    analysis: {
+                        volatility: volatility,
+                        daysToExpiry: daysToExpiry,
+                        moneyness: moneyness,
+                        optionType: optionType
+                    }
+                };
+            }
+        }
+
+        // Расчет денежности
+        function calculateMoneyness(underlyingPrice, strike, optionType) {
+            if (optionType === 'call') {
+                return (underlyingPrice - strike) / underlyingPrice;
+            } else {
+                return (strike - underlyingPrice) / underlyingPrice;
+            }
+        }
+
+        // Отображение результатов расчета цены
+        function displayPriceResults(priceAnalysis) {
+            const operationText = priceAnalysis.operation === 'buy' ? 'ПОКУПКА' : 'ПРОДАЖА';
+            const operationEmoji = priceAnalysis.operation === 'buy' ? '🟢' : '🔴';
+            
+            const moneynessText = Math.abs(priceAnalysis.analysis.moneyness) < 0.05 ? 'ATM' : 
+                                 priceAnalysis.analysis.moneyness > 0.05 ? 'ITM' : 'OTM';
+            
+            const html = `
+                <div class="price-card ${priceAnalysis.operation}">
+                    <div class="price-header">
+                        <div class="price-title">${operationEmoji} Рекомендуемая цена для ${operationText}</div>
+                        <div class="price-value">${priceAnalysis.recommendedPrice.toFixed(3)} ₽</div>
+                    </div>
+                    
+                    <div class="price-details">
+                        <div class="price-item">
+                            <div class="price-item-value">${priceAnalysis.theoreticalPrice.toFixed(3)} ₽</div>
+                            <div class="price-item-label">Теоретическая</div>
+                        </div>
+                        <div class="price-item">
+                            <div class="price-item-value">${(priceAnalysis.adjustment * 100).toFixed(1)}%</div>
+                            <div class="price-item-label">Корректировка</div>
+                        </div>
+                        <div class="price-item">
+                            <div class="price-item-value">${moneynessText}</div>
+                            <div class="price-item-label">Денежность</div>
+                        </div>
+                    </div>
+                    
+                    <div class="strategy-box">
+                        <strong>Стратегия:</strong> 
+                        ${priceAnalysis.operation === 'buy' ? 
+                            'Начните с рекомендуемой цены (попытка купить дешево). Если не исполнится, повысьте до альтернативной цены.' :
+                            'Начните с рекомендуемой цены (попытка продать дорого). Если не исполнится, снизьте до альтернативной цены.'
+                        }
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>📊 Анализ параметров</h3>
+                    <p><strong>Опцион:</strong> ${selectedOption}</p>
+                    <p><strong>Тип:</strong> ${priceAnalysis.analysis.optionType.toUpperCase()}</p>
+                    <p><strong>Волатильность:</strong> ${(priceAnalysis.analysis.volatility * 100).toFixed(1)}%</p>
+                    <p><strong>Дней до экспирации:</strong> ${priceAnalysis.analysis.daysToExpiry}</p>
+                    <p><strong>Денежность:</strong> ${(priceAnalysis.analysis.moneyness * 100).toFixed(1)}% (${moneynessText})</p>
+                    <p><strong>Альтернативная цена:</strong> ${priceAnalysis.alternativePrice.toFixed(3)} ₽</p>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>⚠️ Важно:</strong> 
+                    Цены рассчитаны для неликвидных опционов с пустым стаканом. 
+                    Всегда проверяйте актуальные рыночные условия и используйте собственное суждение!
+                </div>
+            `;
+            
+            document.getElementById('priceResults').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
