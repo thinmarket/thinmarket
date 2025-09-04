@@ -332,14 +332,23 @@
         let assetsList = [];
         let optionsList = [];
         let selectedAsset = null;
+        let selectedAssetType = null;
         let selectedOption = null;
         let selectedOperation = null;
         let optionDetails = null;
 
         // Функция для выполнения запросов к API
-        async function makeRequest(url) {
+        async function makeRequest(url, params = {}) {
             try {
-                const response = await fetch(url);
+                // Добавляем параметры к URL
+                const urlObj = new URL(url);
+                Object.keys(params).forEach(key => {
+                    if (params[key] !== null && params[key] !== undefined) {
+                        urlObj.searchParams.append(key, params[key]);
+                    }
+                });
+                
+                const response = await fetch(urlObj.toString());
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
@@ -399,17 +408,22 @@
             assets.forEach(asset => {
                 const option = document.createElement('option');
                 option.value = asset.asset_code;
-                option.textContent = `${asset.asset_code} (${asset.asset_type})`;
+                option.textContent = `${asset.asset_code} - ${asset.title} (${asset.asset_type})`;
+                option.setAttribute('data-type', asset.asset_type);
                 assetSelect.appendChild(option);
             });
         }
 
         // Шаг 2: Выбор актива
         function onAssetSelected() {
-            selectedAsset = document.getElementById('assetSelect').value;
+            const assetSelect = document.getElementById('assetSelect');
+            const selectedOption = assetSelect.options[assetSelect.selectedIndex];
+            
+            selectedAsset = assetSelect.value;
+            selectedAssetType = selectedOption.getAttribute('data-type');
             
             if (selectedAsset) {
-                console.log('Выбран актив:', selectedAsset);
+                console.log('Выбран актив:', selectedAsset, 'тип:', selectedAssetType);
                 document.getElementById('step3').classList.remove('hidden');
             }
         }
@@ -427,7 +441,20 @@
             button.disabled = true;
             
             try {
-                const result = await makeRequest(`https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options`);
+                // Проверяем, есть ли дубликаты активов с таким кодом
+                const duplicateAssets = assetsList.filter(asset => asset.asset_code === selectedAsset);
+                
+                let params = {};
+                if (duplicateAssets.length > 1) {
+                    // Если есть дубликаты, используем параметр asset_type
+                    params = { asset_type: selectedAssetType };
+                    console.log('Обнаружены дубликаты, используем параметр:', params);
+                }
+                
+                const result = await makeRequest(
+                    `https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options`,
+                    params
+                );
                 
                 if (!result.success) {
                     throw new Error(result.error);
@@ -435,6 +462,10 @@
                 
                 optionsList = result.data;
                 console.log(`Загружено опционов для ${selectedAsset}:`, optionsList.length);
+                
+                if (optionsList.length === 0) {
+                    throw new Error('Нет доступных опционов для выбранного актива');
+                }
                 
                 // Показываем список опционов
                 displayOptions(optionsList);
@@ -447,7 +478,8 @@
                 document.getElementById('priceResults').innerHTML = `
                     <div class="error">
                         <strong>❌ Ошибка загрузки опционов:</strong><br>
-                        ${error.message}
+                        ${error.message}<br><br>
+                        <small>Попробуйте выбрать другой актив или проверьте доступность опционов</small>
                     </div>
                 `;
             } finally {
@@ -503,8 +535,20 @@
             button.disabled = true;
             
             try {
+                // Проверяем, есть ли дубликаты активов с таким кодом
+                const duplicateAssets = assetsList.filter(asset => asset.asset_code === selectedAsset);
+                
+                let params = {};
+                if (duplicateAssets.length > 1) {
+                    // Если есть дубликаты, используем параметр asset_type
+                    params = { asset_type: selectedAssetType };
+                }
+                
                 // Получаем детальные данные опциона
-                const result = await makeRequest(`https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options/${selectedOption}`);
+                const result = await makeRequest(
+                    `https://iss.moex.com/iss/apps/option-calc/v1/assets/${selectedAsset}/options/${selectedOption}`,
+                    params
+                );
                 
                 if (!result.success) {
                     throw new Error(result.error);
@@ -536,7 +580,7 @@
         // Анализ цены для неликвидного опциона
         function analyzePrice(optionData, operation) {
             const theoreticalPrice = optionData.theorprice || 0;
-            const volatility = optionData.volatility || 0;
+            const volatility = (optionData.volatility || 0) / 100; // Делим на 100 для правильного отображения
             const daysToExpiry = optionData.days_until_expiring || 0;
             const underlyingPrice = optionData.underlying_price || 0;
             const strike = optionData.strike || 0;
