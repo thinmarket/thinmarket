@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - Implied Volatility Analyzer</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --blue: #2196F3;
+            --orange: #FF9800;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+        }
+        
+        body {
+            background-color: #121212;
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .control-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .chart-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #232629;
+            color: var(--text);
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 5px;
+            color: var(--text);
+            cursor: pointer;
+        }
+        
+        .tab-btn.active {
+            background: var(--blue);
+        }
+        
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .data-table {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .error {
+            color: var(--red);
+            padding: 10px;
+            background: rgba(244, 67, 54, 0.1);
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            color: var(--green);
+            padding: 10px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .call-row {
+            background: rgba(76, 175, 80, 0.05);
+        }
+        
+        .put-row {
+            background: rgba(244, 67, 54, 0.05);
+        }
+        
+        .chart-controls {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .chart-controls button {
+            padding: 6px 12px;
+            margin-left: 8px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .chart-controls button:hover {
+            background: var(--blue);
+        }
+        
+        #volatility-chart {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+    
+    <!-- Подключаем Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Анализатор ожидаемой волатильности MOEX</h1>
+        <p>Анализ IV (ожидаемой волатильности) опционов Московской биржи</p>
+    </div>
+
+    <div class="control-panel">
+        <div class="form-group">
+            <label for="asset-select">Базовый актив:</label>
+            <select id="asset-select">
+                <option value="">-- Загрузка активов... --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="series-select">Опционная серия:</label>
+            <select id="series-select">
+                <option value="">-- Сначала выберите актив --</option>
+            </select>
+        </div>
+
+        <button id="analyze-btn">Анализировать волатильность</button>
+        <div id="status" class="loading">Выберите параметры и нажмите "Анализировать"</div>
+    </div>
+
+    <div class="chart-container">
+        <div style="margin-bottom: 15px;">
+            <button class="tab-btn active" data-tab="volatility-smile">Улыбка волатильности</button>
+            <button class="tab-btn" data-tab="data-table">Таблица данных</button>
+        </div>
+
+        <div id="volatility-smile" class="tab-content active">
+            <div class="chart-controls">
+                <button id="reset-zoom-btn">Сбросить масштаб</button>
+            </div>
+            <div id="smile-chart">
+                <canvas id="volatility-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="data-table" class="tab-content">
+            <div class="data-table">
+                <h3>Данные опционов</h3>
+                <table id="options-table">
+                    <thead>
+                        <tr>
+                            <th>Тикер</th>
+                            <th>Тип</th>
+                            <th>Страйк</th>
+                            <th>Экспирация</th>
+                            <th>IV (%)</th>
+                            <th>Цена</th>
+                            <th>Бид/Аск</th>
+                        </tr>
+                    </thead>
+                    <tbody id="options-data">
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Данные будут загружены после анализа</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Константы API MOEX
+        const BASE_URL = "https://iss.moex.com/iss/apps/option-calc/v1";
+        
+        // DOM элементы
+        const assetSelect = document.getElementById('asset-select');
+        const seriesSelect = document.getElementById('series-select');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const statusDiv = document.getElementById('status');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const resetZoomBtn = document.getElementById('reset-zoom-btn');
+
+        // Глобальные переменные для хранения данных
+        let currentExpirationDate = '';
+        let currentSeriesData = [];
+        let volatilityChart = null;
+
+        // Переключение вкладок
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Убираем активный класс у всех кнопок
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                // Скрываем все вкладки
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                
+                // Добавляем активный класс текуной кнопке
+                this.classList.add('active');
+                // Показываем соответствующую вкладку
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Загрузка активов
+        async function loadAssets() {
+            statusDiv.textContent = 'Загрузка активов...';
+            statusDiv.className = 'loading';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/assets`);
+                if (!response.ok) throw new Error('Ошибка сети');
+                
+                const data = await response.json();
+                
+                assetSelect.innerHTML = '<option value="">-- Выберите актив --</option>';
+                
+                data.forEach(asset => {
+                    const option = document.createElement('option');
+                    option.value = asset.asset_code;
+                    option.textContent = `${asset.asset_code} - ${asset.title}`;
+                    option.setAttribute('data-type', asset.asset_type);
+                    assetSelect.appendChild(option);
+                });
+                
+                statusDiv.textContent = `Загружено ${data.length} активов`;
+                statusDiv.className = 'loading';
+                
+            } catch (error) {
+                statusDiv.textContent = `Ошибка загрузки активов: ${error.message}`;
+                statusDiv.className = 'error';
+            }
+        }
+
+        // Загрузка опционных серий
+        async function loadOptionSeries(assetCode, assetType) {
+            statusDiv.textContent = 'Загрузка опционных серий...';
+            statusDiv.className = 'loading';
+            
+            try {
+                let url = `${BASE_URL}/assets/${assetCode}/optionseries`;
+                
+                // Если есть дубликаты активов, добавляем параметр asset_type
+                const duplicateAssets = Array.from(assetSelect.options).filter(
+                    opt => opt.value === assetCode && opt !== assetSelect.selectedOptions[0]
+                );
+                
+                if (duplicateAssets.length > 0) {
+                    url += `?asset_type=${assetType}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Ошибка сети');
+                
+                const data = await response.json();
+                
+                seriesSelect.innerHTML = '<option value="">-- Выберите серию --</option>';
+                
+                data.forEach(series => {
+                    const option = document.createElement('option');
+                    option.value = series.optionseries_code;
+                    option.textContent = `${series.optionseries_code} (Экспирация: ${series.expiration_date})`;
+                    option.setAttribute('data-expiration', series.expiration_date);
+                    seriesSelect.appendChild(option);
+                });
+                
+                statusDiv.textContent = `Загружено ${data.length} серий`;
+                statusDiv.className = 'loading';
+                
+            } catch (error) {
+                statusDiv.textContent = `Ошибка загрузки серий: ${error.message}`;
+                statusDiv.className = 'error';
+            }
+        }
+
+        // Загрузка данных опционной доски
+        async function loadOptionBoard(assetCode, seriesCode, assetType) {
+            statusDiv.textContent = 'Загрузка данных опционов...';
+            statusDiv.className = 'loading';
+            
+            try {
+                let url = `${BASE_URL}/assets/${assetCode}/optionseries/${seriesCode}/optionboard`;
+                
+                // Если есть дубликаты активов, добавляем параметр asset_type
+                const duplicateAssets = Array.from(assetSelect.options).filter(
+                    opt => opt.value === assetCode && opt !== assetSelect.selectedOptions[0]
+                );
+                
+                if (duplicateAssets.length > 0) {
+                    url += `?asset_type=${assetType}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Ошибка сети');
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Ошибка загрузки опционной доски:', error);
+                return null;
+            }
+        }
+
+        // Загрузка информации об опционах в серии
+        async function loadOptionsInfo(assetCode, seriesCode, assetType) {
+            try {
+                let url = `${BASE_URL}/assets/${assetCode}/optionseries/${seriesCode}/options`;
+                
+                // Если есть дубликаты активов, добавляем параметр asset_type
+                const duplicateAssets = Array.from(assetSelect.options).filter(
+                    opt => opt.value === assetCode && opt !== assetSelect.selectedOptions[0]
+                );
+                
+                if (duplicateAssets.length > 0) {
+                    url += `?asset_type=${assetType}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Ошибка сети');
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Ошибка загрузки информации об опционах:', error);
+                return null;
+            }
+        }
+
+        // Обработка данных опционной доски
+        function processBoardData(boardData, expirationDate) {
+            const options = [];
+            
+            // Обрабатываем call опционы
+            if (boardData && boardData.call) {
+                boardData.call.forEach(callOption => {
+                    if (callOption.volatility !== null && callOption.volatility !== undefined) {
+                        options.push({
+                            secid: callOption.secid || 'нет данных',
+                            optiontype: 'C',
+                            strike: callOption.strike || 0,
+                            iv: parseFloat(callOption.volatility) || 0,
+                            bid: callOption.bid !== undefined ? parseFloat(callOption.bid) : null,
+                            offer: callOption.offer !== undefined ? parseFloat(callOption.offer) : null,
+                            last: callOption.last !== undefined ? parseFloat(callOption.last) : null,
+                            expirationdate: expirationDate || 'нет данных'
+                        });
+                    }
+                });
+            }
+            
+            // Обрабатываем put опционы
+            if (boardData && boardData.put) {
+                boardData.put.forEach(putOption => {
+                    if (putOption.volatility !== null && putOption.volatility !== undefined) {
+                        options.push({
+                            secid: putOption.secid || 'нет данных',
+                            optiontype: 'P',
+                            strike: putOption.strike || 0,
+                            iv: parseFloat(putOption.volatility) || 0,
+                            bid: putOption.bid !== undefined ? parseFloat(putOption.bid) : null,
+                            offer: putOption.offer !== undefined ? parseFloat(putOption.offer) : null,
+                            last: putOption.last !== undefined ? parseFloat(putOption.last) : null,
+                            expirationdate: expirationDate || 'нет данных'
+                        });
+                    }
+                });
+            }
+            
+            return options;
+        }
+
+        // Отображение данных в таблице
+        function displayOptionsTable(optionsData) {
+            const tableBody = document.getElementById('options-data');
+            tableBody.innerHTML = '';
+            
+            if (optionsData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Нет данных для отображения</td></tr>';
+                return;
+            }
+            
+            // Сортируем опционы по страйку для удобства просмотра
+            optionsData.sort((a, b) => a.strike - b.strike);
+            
+            optionsData.forEach(option => {
+                const row = document.createElement('tr');
+                
+                // Добавляем класс для стилизации строк
+                if (option.optiontype === 'C') {
+                    row.classList.add('call-row');
+                } else {
+                    row.classList.add('put-row');
+                }
+                
+                // Форматируем цены и значения
+                const strikeFormatted = option.strike.toLocaleString('ru-RU');
+                const ivFormatted = option.iv ? option.iv.toFixed(2) : 'нет данных';
+                
+                // Определяем цену для отображения (приоритет: last, среднее bid/ask)
+                let priceDisplay = 'нет данных';
+                if (option.last !== null && option.last !== undefined && option.last > 0) {
+                    priceDisplay = option.last.toFixed(2);
+                } else if (option.bid !== null && option.offer !== null && option.bid > 0 && option.offer > 0) {
+                    priceDisplay = ((option.bid + option.offer) / 2).toFixed(2);
+                } else if (option.bid !== null && option.bid > 0) {
+                    priceDisplay = option.bid.toFixed(2);
+                } else if (option.offer !== null && option.offer > 0) {
+                    priceDisplay = option.offer.toFixed(2);
+                }
+                
+                // Форматируем bid/ask
+                const bidFormatted = option.bid !== null && option.bid > 0 ? option.bid.toFixed(2) : 'нет данных';
+                const askFormatted = option.offer !== null && option.offer > 0 ? option.offer.toFixed(2) : 'нет данных';
+                
+                row.innerHTML = `
+                    <td>${option.secid}</td>
+                    <td>${option.optiontype === 'C' ? 'Call' : 'Put'}</td>
+                    <td>${strikeFormatted}</td>
+                    <td>${option.expirationdate}</td>
+                    <td>${ivFormatted}</td>
+                    <td>${priceDisplay}</td>
+                    <td>${bidFormatted}/${askFormatted}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Построение графика "Улыбки волатильности" с использованием Chart.js
+        function plotVolatilitySmile(optionsData) {
+            // Очищаем контейнер графика
+            const chartContainer = document.getElementById('smile-chart');
+            
+            // Фильтруем данные с корректной волатильностью
+            const validData = optionsData.filter(opt => opt.iv && opt.iv > 0);
+            
+            if (validData.length === 0) {
+                chartContainer.innerHTML = '<div class="loading">Недостаточно данных для построения графика</div>';
+                return;
+            }
+            
+            // Сортируем данные по страйку
+            validData.sort((a, b) => a.strike - b.strike);
+            
+            // Создаем данные для графика
+            const chartData = [];
+            
+            // Используем только put опционы для графика (как в оригинале)
+            validData.forEach(option => {
+                if (option.optiontype === 'P') { // Используем только пут-опционы
+                    chartData.push({
+                        x: option.strike, // X координата - цена страйка
+                        y: option.iv     // Y координата - волатильность
+                    });
+                }
+            });
+            
+            // Если нет put опционов, используем все доступные
+            if (chartData.length === 0) {
+                validData.forEach(option => {
+                    chartData.push({
+                        x: option.strike,
+                        y: option.iv
+                    });
+                });
+            }
+            
+            // Сортируем данные по X (страйку)
+            chartData.sort((a, b) => a.x - b.x);
+            
+            // Удаляем предыдущий график если существует
+            if (volatilityChart) {
+                volatilityChart.destroy();
+            }
+            
+            // Создаем canvas для графика
+            chartContainer.innerHTML = '<canvas id="volatility-chart"></canvas>';
+            const ctx = document.getElementById('volatility-chart').getContext('2d');
+            
+            // Создаем график
+            volatilityChart = new Chart(ctx, {
+                type: 'scatter', // Изменяем на scatter для работы с числовыми координатами
+                data: {
+                    datasets: [{
+                        label: 'Implied Volatility (%)',
+                        data: chartData,
+                        borderColor: '#888888', // Серый цвет как в оригинале
+                        backgroundColor: 'rgba(136, 136, 136, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#888888', // Серые точки
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        showLine: true, // Показываем линию между точками
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Улыбка волатильности (Экспирация: ${validData[0].expirationdate})`,
+                            color: '#FFFFFF',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false // Скрываем легенду как в оригинале
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `IV: ${context.raw.y.toFixed(2)}%`;
+                                },
+                                title: function(context) {
+                                    return `Страйк: ${context[0].raw.x.toLocaleString('ru-RU')}`;
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'xy'
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'xy',
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear', // Числовая шкала для цен страйков
+                            title: {
+                                display: true,
+                                text: 'Страйк',
+                                color: '#AAAAAA'
+                            },
+                            ticks: {
+                                color: '#AAAAAA',
+                                callback: function(value) {
+                                    return value.toLocaleString('ru-RU');
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Implied Volatility (%)',
+                                color: '#AAAAAA'
+                            },
+                            ticks: {
+                                color: '#AAAAAA'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 1000
+                    }
+                }
+            });
+            
+            // Добавляем обработчик для кнопки сброса масштаба
+            resetZoomBtn.onclick = function() {
+                if (volatilityChart) {
+                    volatilityChart.resetZoom();
+                }
+            };
+        }
+
+        // Анализ волатильности
+        analyzeBtn.addEventListener('click', async function() {
+            const assetCode = assetSelect.value;
+            const assetType = assetSelect.selectedOptions[0].getAttribute('data-type');
+            const seriesCode = seriesSelect.value;
+            const expirationDate = seriesSelect.selectedOptions[0].getAttribute('data-expiration');
+            
+            if (!assetCode || !seriesCode) {
+                statusDiv.textContent = 'Выберите базовый актив и опционную серию';
+                statusDiv.className = 'error';
+                return;
+            }
+            
+            try {
+                // Загрузка данных опционной доски
+                const boardData = await loadOptionBoard(assetCode, seriesCode, assetType);
+                
+                if (!boardData) {
+                    statusDiv.textContent = 'Не удалось загрузить данные опционов';
+                    statusDiv.className = 'error';
+                    return;
+                }
+                
+                // Обработка данных с передачей даты экспирации
+                const optionsData = processBoardData(boardData, expirationDate);
+                
+                if (optionsData.length === 0) {
+                    statusDiv.textContent = 'Нет данных по волатильности для отображения';
+                    statusDiv.className = 'error';
+                    return;
+                }
+                
+                // Сохраняем данные для возможного повторного использования
+                currentExpirationDate = expirationDate;
+                currentSeriesData = optionsData;
+                
+                // Отображение результатов
+                displayOptionsTable(optionsData);
+                plotVolatilitySmile(optionsData);
+                
+                statusDiv.textContent = `Успешно загружено ${optionsData.length} опционов (Экспирация: ${expirationDate})`;
+                statusDiv.className = 'success';
+                
+            } catch (error) {
+                statusDiv.textContent = `Ошибка анализа: ${error.message}`;
+                statusDiv.className = 'error';
+                console.error('Ошибка анализа:', error);
+            }
+        });
+
+        // Обработчик изменения выбора актива
+        assetSelect.addEventListener('change', function() {
+            const assetCode = this.value;
+            const assetType = this.selectedOptions[0].getAttribute('data-type');
+            
+            if (assetCode) {
+                loadOptionSeries(assetCode, assetType);
+            } else {
+                seriesSelect.innerHTML = '<option value="">-- Сначала выберите актив --</option>';
+            }
+        });
+
+        // Инициализация
+        loadAssets();
+    </script>
+</body>
+</html>

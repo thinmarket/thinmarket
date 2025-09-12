@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThinMarket - Historical Volatility Calculator</title>
+    <style>
+        :root {
+            --green: #4CAF50;
+            --red: #F44336;
+            --blue: #2196F3;
+            --orange: #FF9800;
+            --dark-bg: #1E1E1E;
+            --darker-bg: #121212;
+            --text: #FFFFFF;
+            --text-secondary: #AAAAAA;
+            --card-bg: rgba(30, 30, 30, 0.8);
+        }
+        body {
+            background-color: #121212;
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #2a2a2a 100%);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1.title {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(90deg, var(--blue), #03A9F4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 800;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--blue) 0%, #03A9F4 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+        }
+        .control-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #232629;
+            color: var(--text);
+            font-size: 14px;
+        }
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green) 0%, #66BB6A 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        .results-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        .volatility-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .volatility-table th {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+        .volatility-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .volatility-table tr:last-child td {
+            border-bottom: none;
+        }
+        .volatility-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        .error {
+            color: var(--red);
+            padding: 10px;
+            background: rgba(244, 67, 54, 0.1);
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success {
+            color: var(--green);
+            padding: 10px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #232629;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), #03A9F4);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .volatility-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .volatility-low {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--green);
+        }
+        .volatility-medium {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--orange);
+        }
+        .volatility-high {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--red);
+        }
+        .info-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .chart-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+            display: none;
+            position: relative;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text);
+        }
+        .chart-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .chart-actions button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.1);
+        }
+        .chart-actions button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        #candlestick-chart {
+            width: 100%;
+            height: 450px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        .legend-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .date-range-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .date-input-group {
+            flex: 1;
+        }
+        .auto-date-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .auto-date-toggle input {
+            width: auto;
+            margin-right: 5px;
+        }
+        .data-info {
+            background: rgba(255, 152, 0, 0.1);
+            color: var(--orange);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .year-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .year-button {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 6px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .year-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .year-button.active {
+            background: var(--blue);
+            color: white;
+        }
+        .chart-tooltip {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            color: var(--text);
+            z-index: 1000;
+            pointer-events: none;
+            min-width: 180px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .tooltip-label {
+            color: var(--text-secondary);
+            margin-right: 10px;
+        }
+        .tooltip-value {
+            font-weight: 500;
+        }
+        .tooltip-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tooltip-section-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+    </style>
+    <!-- Подключаем библиотеку Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="title-container">
+            <h1 class="title">Historical Volatility Calculator</h1>
+        </div>
+        <a href="index.html" class="back-button">← На главную</a>
+    </div>
+
+    <div class="control-panel">
+        <div class="form-group">
+            <label for="asset-type">Тип актива:</label>
+            <select id="asset-type">
+                <option value="Акция">Акция</option>
+                <option value="Фьючерс">Фьючерс</option>
+                <option value="Валюта">Валюта</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="ticker-select">Тикер:</label>
+            <select id="ticker-select">
+                <option value="">-- Выберите тикер --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="candle-type">Таймфрейм:</label>
+            <select id="candle-type">
+                <option value="24" selected>Дневные (1D)</option>
+                <option value="60">Часовые (1H)</option>
+                <option value="15">15-минутные (15M)</option>
+                <option value="5">5-минутные (5M)</option>
+                <option value="1">1-минутные (1M)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="auto-date-toggle">
+                <input type="checkbox" id="auto-date-range" checked>
+                <label for="auto-date-range">Автоматический расчет периода по количеству свечей</label>
+            </div>
+        </div>
+
+        <div class="form-group" id="candle-count-group">
+            <label for="candle-count">Количество свечей для анализа:</label>
+            <input type="number" id="candle-count" value="252" min="5">
+            <div class="info-text">Минимум 5 свечей (252 = 1 торговый год)</div>
+        </div>
+
+        <div class="form-group" id="date-range-group" style="display: none;">
+            <label>Период данных:</label>
+            
+            <div class="year-selector">
+                <button class="year-button" data-years="1">1 год</button>
+                <button class="year-button" data-years="2">2 года</button>
+                <button class="year-button" data-years="3">3 года</button>
+                <button class="year-button" data-years="5">5 лет</button>
+                <button class="year-button" data-years="10">Макс</button>
+            </div>
+            
+            <div class="date-range-container">
+                <div class="date-input-group">
+                    <label for="start-date">Дата начала:</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="date-input-group">
+                    <label for="end-date">Дата окончания:</label>
+                    <input type="date" id="end-date" value="">
+                </div>
+            </div>
+            <div class="info-text">Укажите период для анализа данных (доступно до 10+ лет истории)</div>
+        </div>
+
+        <button id="calculate-btn">Рассчитать волатильность</button>
+    </div>
+
+    <div class="chart-container" id="chart-container">
+        <div class="chart-header">
+            <div class="chart-title">График цены и волатильности</div>
+            <div class="chart-actions">
+                <button id="reset-chart">Сбросить масштаб</button>
+                <button id="toggle-volatility">Скрыть волатильность</button>
+            </div>
+        </div>
+        <div id="candlestick-chart"></div>
+        <div class="chart-tooltip" id="chart-tooltip" style="display: none;"></div>
+        <div class="legend" id="volatility-legend"></div>
+    </div>
+
+    <div class="results-container">
+        <div id="status" class="loading">Выберите параметры и нажмите "Рассчитать"</div>
+        <div id="data-info" class="data-info" style="display: none;"></div>
+        <div class="progress-bar" style="display: none;">
+            <div class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        
+        <table class="volatility-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Метод расчета</th>
+                    <th id="period-volatility-header">Волатильность периода</th>
+                    <th id="annual-volatility-header">Годовая волатильность</th>
+                    <th>Описание метода</th>
+                </tr>
+            </thead>
+            <tbody id="results-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Константы для API MOEX
+        const TQBR_TICKERS_URL = "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+        const FORTS_TICKERS_URL = "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+        const CETS_TICKERS_URL = "https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities.json?iss.meta=off&iss.only=securities&securities.columns=SECID,SHORTNAME";
+        
+        const CANDLE_URLS = {
+            'Акция': "https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{}/candles.json",
+            'Фьючерс': "https://iss.moex.com/iss/engines/futures/markets/forts/boards/RFUD/securities/{}/candles.json",
+            'Валюта': "https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities/{}/candles.json"
+        };
+
+        // Максимальное количество свечей за один запрос
+        const MAX_CANDLES_PER_REQUEST = 500;
+
+        // Цвета для линий волатильности
+        const VOLATILITY_COLORS = {
+            'Standard Close': '#FF6B6B',
+            'Parkinson': '#4ECDC4',
+            'Garman-Klass': '#FFE66D',
+            'Rogers-Satchell': '#6A0572',
+            'Yang-Zhang': '#1A535C'
+        };
+
+        // DOM элементы
+        const assetTypeSelect = document.getElementById('asset-type');
+        const tickerSelect = document.getElementById('ticker-select');
+        const candleTypeSelect = document.getElementById('candle-type');
+        const candleCountInput = document.getElementById('candle-count');
+        const candleCountGroup = document.getElementById('candle-count-group');
+        const dateRangeGroup = document.getElementById('date-range-group');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const autoDateRangeCheckbox = document.getElementById('auto-date-range');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const statusDiv = document.getElementById('status');
+        const dataInfoDiv = document.getElementById('data-info');
+        const progressBar = document.querySelector('.progress-bar');
+        const progressBarFill = document.querySelector('.progress-bar-fill');
+        const resultsTable = document.querySelector('.volatility-table');
+        const resultsBody = document.getElementById('results-body');
+        const periodVolatilityHeader = document.getElementById('period-volatility-header');
+        const annualVolatilityHeader = document.getElementById('annual-volatility-header');
+        const chartContainer = document.getElementById('chart-container');
+        const resetChartBtn = document.getElementById('reset-chart');
+        const toggleVolatilityBtn = document.getElementById('toggle-volatility');
+        const volatilityLegend = document.getElementById('volatility-legend');
+        const yearButtons = document.querySelectorAll('.year-button');
+        const chartTooltip = document.getElementById('chart-tooltip');
+
+        // Переменные для графика
+        let chart;
+        let candleSeries;
+        let volatilitySeries = {};
+        let isVolatilityVisible = true;
+        let currentCandles = [];
+        let currentVolatilityData = {};
+
+        // Установка текущей даты по умолчанию для конечной даты
+        function setDefaultDates() {
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+            
+            endDateInput.value = today.toISOString().split('T')[0];
+            startDateInput.value = oneYearAgo.toISOString().split('T')[0];
+        }
+
+        // Обработчик переключения между автоматическим и ручным выбором дат
+        autoDateRangeCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                candleCountGroup.style.display = 'block';
+                dateRangeGroup.style.display = 'none';
+            } else {
+                candleCountGroup.style.display = 'none';
+                dateRangeGroup.style.display = 'block';
+            }
+        });
+
+        // Обработчики для кнопок выбора периода
+        yearButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                yearButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const years = parseInt(this.dataset.years);
+                const endDate = new Date();
+                const startDate = new Date();
+                
+                if (years === 10) {
+                    // Максимальный период - 10 лет назад
+                    startDate.setFullYear(endDate.getFullYear() - 10);
+                } else {
+                    startDate.setFullYear(endDate.getFullYear() - years);
+                }
+                
+                startDateInput.value = startDate.toISOString().split('T')[0];
+                endDateInput.value = endDate.toISOString().split('T')[0];
+            });
+        });
+
+        // Функция для получения временной метки из данных свечи
+        function getCandleTimestamp(candle) {
+            if (candle.timestamp) {
+                return candle.timestamp;
+            }
+            if (candle.end) {
+                return Math.floor(new Date(candle.end).getTime() / 1000);
+            }
+            if (candle.begin) {
+                return Math.floor(new Date(candle.begin).getTime() / 1000);
+            }
+            return 0;
+        }
+
+        // ИСПРАВЛЕННАЯ функция для получения данных свечей с пагинацией
+        async function getCandleDataWithPagination(symbol, assetType, interval, startDate, endDate) {
+            const url = CANDLE_URLS[assetType].replace("{}", symbol);
+            let allCandles = [];
+            let currentStart = new Date(startDate);
+            const end = new Date(endDate);
+            
+            console.log(`Загрузка данных с ${startDate} по ${endDate}`);
+
+            let attemptCount = 0;
+            const maxAttempts = 20;
+
+            while (currentStart <= end && attemptCount < maxAttempts) {
+                let currentEnd = new Date(currentStart);
+                
+                // Для дневных данных добавляем 500 дней
+                if (interval === '24') {
+                    currentEnd.setDate(currentEnd.getDate() + MAX_CANDLES_PER_REQUEST - 1);
+                } else {
+                    // Для внутридневных данных рассчитываем период исходя из интервала
+                    const intervalMinutes = parseInt(interval);
+                    const minutesPerRequest = MAX_CANDLES_PER_REQUEST * intervalMinutes;
+                    const daysToAdd = Math.floor(minutesPerRequest / (24 * 60));
+                    currentEnd.setDate(currentEnd.getDate() + Math.max(1, daysToAdd));
+                }
+                
+                // Не выходим за пределы конечной дата
+                if (currentEnd > end) {
+                    currentEnd = new Date(end);
+                }
+
+                const params = `?interval=${interval}&from=${currentStart.toISOString().slice(0, 10)}&till=${currentEnd.toISOString().slice(0, 10)}`;
+                
+                console.log(`Запрос: ${currentStart.toISOString().slice(0, 10)} - ${currentEnd.toISOString().slice(0, 10)}`);
+                
+                try {
+                    const response = await fetch(url + params);
+                    if (!response.ok) throw new Error('Ошибка сети');
+                    
+                    const data = await response.json();
+                    const candles = data.candles?.data || [];
+                    const columns = data.candles?.columns || [];
+                    
+                    console.log(`Получено свечей: ${candles.length}`);
+
+                    if (candles.length === 0) {
+                        // Если данных нет, переходим к следующему периоду
+                        currentStart = new Date(currentEnd);
+                        currentStart.setDate(currentStart.getDate() + 1);
+                        attemptCount++;
+                        continue;
+                    }
+
+                    // Преобразуем в удобный формат
+                    const formattedCandles = candles.map(candle => {
+                        const candleObj = {};
+                        columns.forEach((column, index) => {
+                            candleObj[column] = candle[index];
+                        });
+                        
+                        // Добавляем временную метку
+                        candleObj.timestamp = getCandleTimestamp(candleObj);
+                        
+                        return candleObj;
+                    });
+
+                    allCandles = allCandles.concat(formattedCandles);
+                    
+                    // Переходим к следующему периоду (начинаем со следующего дня после последней полученной свечи)
+                    currentStart = new Date(currentEnd);
+                    currentStart.setDate(currentStart.getDate() + 1);
+                    
+                    // Обновляем прогресс
+                    const totalDays = (end - new Date(startDate)) / (1000 * 60 * 60 * 24);
+                    const completedDays = (currentStart - new Date(startDate)) / (1000 * 60 * 60 * 24);
+                    const progress = 10 + (50 * Math.min(1, completedDays / totalDays));
+                    progressBarFill.style.width = `${progress}%`;
+                    
+                    // Небольшая задержка между запросами
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    
+                } catch (error) {
+                    console.error('Ошибка при получении данных:', error);
+                    currentStart.setDate(currentStart.getDate() + 30); // Пропускаем 30 дней при ошибке
+                    attemptCount++;
+                }
+            }
+            
+            console.log(`Всего получено свечей: ${allCandles.length}`);
+            
+            // Сортируем свечи по дате
+            allCandles.sort((a, b) => {
+                const dateA = new Date(a.end || a.timestamp * 1000);
+                const dateB = new Date(b.end || b.timestamp * 1000);
+                return dateA - dateB;
+            });
+            
+            return allCandles;
+        }
+
+        // Функция получения данных свечей
+        async function getCandleData(symbol, assetType, interval) {
+            let startDate, endDate;
+            let requestedCount = 0;
+            
+            if (autoDateRangeCheckbox.checked) {
+                requestedCount = parseInt(candleCountInput.value);
+                
+                endDate = new Date();
+                if (interval === '24') {
+                    const daysBack = Math.ceil(requestedCount * 1.8);
+                    startDate = new Date();
+                    startDate.setDate(startDate.getDate() - daysBack);
+                } else {
+                    const intervalMinutes = parseInt(interval);
+                    const minutesBack = requestedCount * intervalMinutes * 1.5;
+                    startDate = new Date();
+                    startDate.setMinutes(startDate.getMinutes() - minutesBack);
+                }
+            } else {
+                startDate = new Date(startDateInput.value);
+                endDate = new Date(endDateInput.value);
+                requestedCount = 0;
+            }
+            
+            // Используем пагинацию для больших периодов
+            const candles = await getCandleDataWithPagination(
+                symbol, 
+                assetType, 
+                interval, 
+                startDate.toISOString().slice(0, 10), 
+                endDate.toISOString().slice(0, 10)
+            );
+
+            if (candles.length === 0) {
+                throw new Error('Нет данных свечей для выбранного периода');
+            }
+
+            // Показываем информацию о полученных данных
+            if (requestedCount > 0 && candles.length < requestedCount) {
+                dataInfoDiv.style.display = 'block';
+                dataInfoDiv.textContent = `Запрошено ${requestedCount} свечей, доступно ${candles.length}. API MOEX предоставляет только существующие исторические данные.`;
+            } else {
+                dataInfoDiv.style.display = 'none';
+            }
+
+            // Если выбран автоматический режим, берем только последние N свечей
+            if (autoDateRangeCheckbox.checked) {
+                return candles.slice(-Math.min(requestedCount, candles.length));
+            }
+            
+            return candles;
+        }
+
+        // Инициализация графика
+        function initChart() {
+            if (chart) {
+                chart.remove();
+            }
+            
+            const chartElement = document.getElementById('candlestick-chart');
+            chartElement.innerHTML = '';
+            
+            chart = LightweightCharts.createChart(chartElement, {
+                layout: {
+                    background: { color: '#1E1E1E' },
+                    textColor: '#AAAAAA',
+                },
+                grid: {
+                    vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                    horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                },
+                timeScale: {
+                    timeVisible: true,
+                    secondsVisible: false,
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                width: chartElement.clientWidth,
+                height: 450,
+            });
+            
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#4CAF50',
+                downColor: '#F44336',
+                borderDownColor: '#F44336',
+                borderUpColor: '#4CAF50',
+                wickDownColor: '#F44336',
+                wickUpColor: '#4CAF50',
+            });
+            
+            // Добавляем серии для каждого метода волатильности
+            Object.keys(VOLATILITY_COLORS).forEach(method => {
+                volatilitySeries[method] = chart.addLineSeries({
+                    color: VOLATILITY_COLORS[method],
+                    lineWidth: 2,
+                    lineStyle: LightweightCharts.LineStyle.Solid,
+                    title: method,
+                    priceScaleId: 'volatility',
+                    visible: isVolatilityVisible,
+                });
+            });
+            
+            // Создаем правую шкалу для волатильности
+            chart.priceScale('volatility').applyOptions({
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1,
+                },
+            });
+            
+            // Добавляем обработчик для отображения подсказки
+            chart.subscribeCrosshairMove(handleCrosshairMove);
+            
+            // Обновляем легенду
+            updateLegend();
+            
+            chartContainer.style.display = 'block';
+        }
+
+        // Обработчик движения перекрестия для отображения подсказки
+        function handleCrosshairMove(param) {
+            if (!param.time || !currentCandles.length) {
+                chartTooltip.style.display = 'none';
+                return;
+            }
+
+            // Находим свечу по времени
+            const candleTimestamp = Math.floor(new Date(param.time * 1000).getTime() / 1000);
+            const candle = currentCandles.find(c => getCandleTimestamp(c) === candleTimestamp);
+            
+            if (!candle) {
+                chartTooltip.style.display = 'none';
+                return;
+            }
+
+            // Получаем значения волатильности для этого времени
+            const volatilityValues = {};
+            Object.keys(currentVolatilityData).forEach(method => {
+                const dataPoint = currentVolatilityData[method].find(d => d.time === candleTimestamp);
+                if (dataPoint) {
+                    volatilityValues[method] = dataPoint.value;
+                }
+            });
+
+            // Форматируем дату
+            const date = new Date(candleTimestamp * 1000);
+            const dateStr = date.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            const timeStr = date.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Создаем HTML для подсказки
+            let tooltipHtml = `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Дата:</span>
+                    <span class="tooltip-value">${dateStr} ${timeStr}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Цена:</span>
+                    <span class="tooltip-value">${parseFloat(candle.close).toFixed(2)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Открытие:</span>
+                    <span class="tooltip-value">${parseFloat(candle.open).toFixed(2)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Макс:</span>
+                    <span class="tooltip-value">${parseFloat(candle.high).toFixed(2)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Мин:</span>
+                    <span class="tooltip-value">${parseFloat(candle.low).toFixed(2)}</span>
+                </div>
+            `;
+
+            // Добавляем данные по волатильности, если они есть
+            if (Object.keys(volatilityValues).length > 0) {
+                tooltipHtml += `<div class="tooltip-section">
+                    <div class="tooltip-section-title">Волатильность (% годовых):</div>`;
+                
+                Object.keys(volatilityValues).forEach(method => {
+                    const color = VOLATILITY_COLORS[method] || '#FFFFFF';
+                    tooltipHtml += `
+                        <div class="tooltip-row">
+                            <span class="tooltip-label" style="color: ${color}">${method}:</span>
+                            <span class="tooltip-value">${volatilityValues[method].toFixed(2)}%</span>
+                        </div>
+                    `;
+                });
+                
+                tooltipHtml += `</div>`;
+            }
+
+            chartTooltip.innerHTML = tooltipHtml;
+            chartTooltip.style.display = 'block';
+        }
+
+        // Обновление легенды
+        function updateLegend() {
+            volatilityLegend.innerHTML = '';
+            
+            Object.keys(VOLATILITY_COLORS).forEach(method => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = VOLATILITY_COLORS[method];
+                
+                const label = document.createElement('span');
+                label.className = 'legend-label';
+                label.textContent = method;
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(label);
+                volatilityLegend.appendChild(legendItem);
+            });
+        }
+
+        // Функция для расчета скользящей волатильности
+        function calculateRollingVolatility(method, candles, windowSize) {
+            const result = [];
+            
+            for (let i = windowSize; i <= candles.length; i++) {
+                const window = candles.slice(i - windowSize, i);
+                
+                let volatility;
+                switch (method) {
+                    case 'Standard Close':
+                        const closes = window.map(c => parseFloat(c.close));
+                        volatility = calculateStandardCloseVolatility(closes);
+                        break;
+                    case 'Parkinson':
+                        const highs = window.map(c => parseFloat(c.high));
+                        const lows = window.map(c => parseFloat(c.low));
+                        volatility = calculateParkinsonVolatility(highs, lows);
+                        break;
+                    case 'Garman-Klass':
+                        const gkHighs = window.map(c => parseFloat(c.high));
+                        const gkLows = window.map(c => parseFloat(c.low));
+                        const gkOpens = window.map(c => parseFloat(c.open));
+                        const gkCloses = window.map(c => parseFloat(c.close));
+                        volatility = calculateGarmanKlassVolatility(gkHighs, gkLows, gkOpens, gkCloses);
+                        break;
+                    case 'Rogers-Satchell':
+                        const rsHighs = window.map(c => parseFloat(c.high));
+                        const rsLows = window.map(c => parseFloat(c.low));
+                        const rsOpens = window.map(c => parseFloat(c.open));
+                        const rsCloses = window.map(c => parseFloat(c.close));
+                        volatility = calculateRogersSatchellVolatility(rsHighs, rsLows, rsOpens, rsCloses);
+                        break;
+                    case 'Yang-Zhang':
+                        const yzHighs = window.map(c => parseFloat(c.high));
+                        const yzLows = window.map(c => parseFloat(c.low));
+                        const yzOpens = window.map(c => parseFloat(c.open));
+                        const yzCloses = window.map(c => parseFloat(c.close));
+                        volatility = calculateYangZhangVolatility(yzHighs, yzLows, yzOpens, yzCloses);
+                        break;
+                    default:
+                        volatility = 0;
+                }
+                
+                // Конвертируем в годовую волатильность
+                const annualVolatility = volatility * Math.sqrt(252);
+                
+                result.push({
+                    time: getCandleTimestamp(window[window.length - 1]),
+                    value: annualVolatility * 100 // В процентах
+                });
+            }
+            
+            return result;
+        }
+
+        // ИСПРАВЛЕННЫЕ МЕТОДЫ РАСЧЕТА ВОЛАТИЛЬНОСТИ
+
+        // 1. Standard Close - метод на основе цен закрытия
+        function calculateStandardCloseVolatility(closes) {
+            if (closes.length < 2) return 0;
+            
+            // Рассчитываем логарифмические доходности
+            const returns = [];
+            for (let i = 1; i < closes.length; i++) {
+                returns.push(Math.log(closes[i] / closes[i-1]));
+            }
+            
+            // Рассчитываем стандартное отклонение доходностей
+            const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+            
+            return Math.sqrt(variance);
+        }
+
+        // 2. Parkinson - метод, использующий только максимумы и минимумы
+        function calculateParkinsonVolatility(highs, lows) {
+            if (highs.length !== lows.length || highs.length < 2) return 0;
+            
+            const sum = [];
+            for (let i = 0; i < highs.length; i++) {
+                sum.push(Math.pow(Math.log(highs[i] / lows[i]), 2));
+            }
+            
+            const mean = sum.reduce((s, val) => s + val, 0) / sum.length;
+            return Math.sqrt(mean / (4 * Math.log(2)));
+        }
+
+        // 3. Garman-Klass - метод, использующий O, H, L, C цены
+        function calculateGarmanKlassVolatility(opens, highs, lows, closes) {
+            if (opens.length !== highs.length || opens.length < 2) return 0;
+            
+            const sum = [];
+            for (let i = 0; i < opens.length; i++) {
+                const term1 = 0.5 * Math.pow(Math.log(highs[i] / lows[i]), 2);
+                const term2 = (2 * Math.log(2) - 1) * Math.pow(Math.log(closes[i] / opens[i]), 2);
+                sum.push(term1 - term2);
+            }
+            
+            const mean = sum.reduce((s, val) => s + val, 0) / sum.length;
+            return Math.sqrt(mean);
+        }
+
+        // 4. Rogers-Satchell - метод, учитывающий тренд
+        function calculateRogersSatchellVolatility(opens, highs, lows, closes) {
+            if (opens.length !== highs.length || opens.length < 2) return 0;
+            
+            const sum = [];
+            for (let i = 0; i < opens.length; i++) {
+                const term1 = Math.log(highs[i] / closes[i]) * Math.log(highs[i] / opens[i]);
+                const term2 = Math.log(lows[i] / closes[i]) * Math.log(lows[i] / opens[i]);
+                sum.push(term1 + term2);
+            }
+            
+            const mean = sum.reduce((s, val) => s + val, 0) / sum.length;
+            return Math.sqrt(mean);
+        }
+
+        // 5. Yang-Zhang - самый комплексный метод, учитывающий тренд и гэпы
+        function calculateYangZhangVolatility(opens, highs, lows, closes) {
+            if (opens.length !== highs.length || opens.length < 2) return 0;
+            
+            // Константа для метода
+            const k = 0.34 / (1.34 + (opens.length + 1) / (opens.length - 1));
+            
+            // Волатильность открытия-закрытия
+            const ocReturns = [];
+            for (let i = 1; i < opens.length; i++) {
+                ocReturns.push(Math.log(opens[i] / closes[i-1]));
+            }
+            const ocVariance = calculateVariance(ocReturns);
+            
+            // Волатильность открытия-открытия
+            const ooReturns = [];
+            for (let i = 1; i < opens.length; i++) {
+                ooReturns.push(Math.log(opens[i] / opens[i-1]));
+            }
+            const ooVariance = calculateVariance(ooReturns);
+            
+            // Волатильность закрытия-закрытия
+            const ccReturns = [];
+            for (let i = 1; i < closes.length; i++) {
+                ccReturns.push(Math.log(closes[i] / closes[i-1]));
+            }
+            const ccVariance = calculateVariance(ccReturns);
+            
+            // Совокупная волатильность
+            return Math.sqrt(ooVariance + k * ccVariance + (1 - k) * ocVariance);
+        }
+
+        // Вспомогательная функция для расчета дисперсии
+        function calculateVariance(values) {
+            if (values.length < 2) return 0;
+            const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+            return values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+        }
+
+        // ИСПРАВЛЕННАЯ функция конвертации волатильности
+        function convertVolatility(volatility, interval, target) {
+            const intervalNum = parseInt(interval);
+            
+            // Коэффициенты преобразования для разных таймфреймов
+            const conversionFactors = {
+                '1': 365 * 24 * 60,    // 1-минутные -> годовые
+                '5': 365 * 24 * 12,    // 5-минутные -> годовые
+                '15': 365 * 24 * 4,    // 15-минутные -> годовые
+                '60': 365 * 24,        // часовые -> годовые
+                '24': 365              // дневные -> годовые
+            };
+            
+            if (target === 'annual') {
+                // Преобразуем в годовую волатильность
+                const factor = conversionFactors[interval] || 365;
+                return volatility * Math.sqrt(factor);
+            } else if (target === 'period') {
+                // Преобразуем в волатильность периода
+                const factor = conversionFactors[interval] || 365;
+                return volatility / Math.sqrt(factor);
+            }
+            
+            return volatility;
+        }
+
+        // Функция для определения уровня волатильности
+        function getVolatilityLevel(volatility, type) {
+            if (type === 'period') {
+                if (volatility < 0.005) return { level: 'Низкая', class: 'volatility-low' };
+                if (volatility < 0.015) return { level: 'Средняя', class: 'volatility-medium' };
+                return { level: 'Высокая', class: 'volatility-high' };
+            } else {
+                if (volatility < 0.15) return { level: 'Низкая', class: 'volatility-low' };
+                if (volatility < 0.30) return { level: 'Средняя', class: 'volatility-medium' };
+                return { level: 'Высокая', class: 'volatility-high' };
+            }
+        }
+
+        // Обработчик кнопки расчета
+        calculateBtn.addEventListener('click', async function() {
+            const symbol = tickerSelect.value;
+            const assetType = assetTypeSelect.value;
+            const interval = candleTypeSelect.value;
+
+            if (!symbol) {
+                statusDiv.textContent = 'Пожалуйста, выберите тикер';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            statusDiv.textContent = 'Загрузка данных...';
+            statusDiv.className = 'loading';
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '10%';
+
+            try {
+                // Получаем данные свечей
+                const candles = await getCandleData(symbol, assetType, interval);
+                
+                if (candles.length < 5) {
+                    throw new Error('Недостаточно данных для анализа (минимум 5 свечей)');
+                }
+
+                progressBarFill.style.width = '60%';
+                statusDiv.textContent = `Расчет волатильности для ${symbol}...`;
+
+                // Рассчитываем волатильность разными методами
+                const results = [];
+                
+                // Standard Close метод
+                const closes = candles.map(c => parseFloat(c.close));
+                const stdVolatility = calculateStandardCloseVolatility(closes);
+                results.push({
+                    method: 'Standard Close',
+                    periodVolatility: stdVolatility,
+                    description: 'На основе логарифмических доходностей цен закрытия'
+                });
+
+                // Parkinson метод
+                const highs = candles.map(c => parseFloat(c.high));
+                const lows = candles.map(c => parseFloat(c.low));
+                const parkinsonVolatility = calculateParkinsonVolatility(highs, lows);
+                results.push({
+                    method: 'Parkinson',
+                    periodVolatility: parkinsonVolatility,
+                    description: 'Использует только цены High и Low'
+                });
+
+                // Garman-Klass метод
+                const opens = candles.map(c => parseFloat(c.open));
+                const garmanKlassVolatility = calculateGarmanKlassVolatility(opens, highs, lows, closes);
+                results.push({
+                    method: 'Garman-Klass',
+                    periodVolatility: garmanKlassVolatility,
+                    description: 'Использует O, H, L, C цены'
+                });
+
+                // Rogers-Satchell метод
+                const rogersSatchellVolatility = calculateRogersSatchellVolatility(opens, highs, lows, closes);
+                results.push({
+                    method: 'Rogers-Satchell',
+                    periodVolatility: rogersSatchellVolatility,
+                    description: 'Учитывает тренд (использует O, H, L, C)'
+                });
+
+                // Yang-Zhang метод
+                const yangZhangVolatility = calculateYangZhangVolatility(opens, highs, lows, closes);
+                results.push({
+                    method: 'Yang-Zhang',
+                    periodVolatility: yangZhangVolatility,
+                    description: 'Учитывает и тренд, и гэпы (самый комплексный)'
+                });
+
+                // Рассчитываем средневзвешенное
+                const weights = {
+                    'Standard Close': 1,
+                    'Parkinson': 1.5,
+                    'Garman-Klass': 1.5,
+                    'Rogers-Satchell': 1.5,
+                    'Yang-Zhang': 2
+                };
+                
+                let weightedSum = 0;
+                let totalWeight = 0;
+                
+                results.forEach(result => {
+                    weightedSum += result.periodVolatility * weights[result.method];
+                    totalWeight += weights[result.method];
+                });
+                
+                const weightedAverage = weightedSum / totalWeight;
+                results.push({
+                    method: 'Средневзвешенное',
+                    periodVolatility: weightedAverage,
+                    description: 'Взвешенное среднее всех методов'
+                });
+
+                progressBarFill.style.width = '80%';
+
+                // Обновляем таблицу результатов
+                resultsBody.innerHTML = '';
+                
+                results.forEach(result => {
+                    const row = document.createElement('tr');
+                    
+                    // Название метода
+                    const methodCell = document.createElement('td');
+                    methodCell.textContent = result.method;
+                    row.appendChild(methodCell);
+                    
+                    // Волатильность периода
+                    const periodVolCell = document.createElement('td');
+                    const periodVol = result.periodVolatility;
+                    const periodVolPercent = (periodVol * 100).toFixed(2) + '%';
+                    const periodLevel = getVolatilityLevel(periodVol, 'period');
+                    
+                    periodVolCell.innerHTML = `${periodVolPercent} <span class="volatility-badge ${periodLevel.class}">${periodLevel.level}</span>`;
+                    row.appendChild(periodVolCell);
+                    
+                    // Годовая волатильность
+                    const annualVolCell = document.createElement('td');
+                    const annualVol = convertVolatility(result.periodVolatility, interval, 'annual');
+                    const annualVolPercent = (annualVol * 100).toFixed(2) + '%';
+                    const annualLevel = getVolatilityLevel(annualVol, 'annual');
+                    
+                    annualVolCell.innerHTML = `${annualVolPercent} <span class="volatility-badge ${annualLevel.class}">${annualLevel.level}</span>`;
+                    row.appendChild(annualVolCell);
+                    
+                    // Описание
+                    const descCell = document.createElement('td');
+                    descCell.textContent = result.description;
+                    row.appendChild(descCell);
+                    
+                    resultsBody.appendChild(row);
+                });
+
+                // Обновляем заголовки таблицы
+                const intervalText = candleTypeSelect.options[candleTypeSelect.selectedIndex].text;
+                periodVolatilityHeader.textContent = `${intervalText} волатильность`;
+                periodVolatilityHeader.style.display = 'table-cell';
+                annualVolatilityHeader.style.display = 'table-cell';
+                
+                // Показываем таблицу
+                resultsTable.style.display = 'table';
+                
+                // Инициализируем график
+                initChart();
+                
+                // Подготавливаем данные для графика свечей
+                const chartData = candles.map(candle => ({
+                    time: getCandleTimestamp(candle),
+                    open: parseFloat(candle.open),
+                    high: parseFloat(candle.high),
+                    low: parseFloat(candle.low),
+                    close: parseFloat(candle.close)
+                }));
+                
+                candleSeries.setData(chartData);
+                
+                // Сохраняем текущие свечи для подсказки
+                currentCandles = candles;
+                currentVolatilityData = {};
+                
+                // Рассчитываем и отображаем скользящую волатильность
+                const windowSize = Math.min(20, Math.floor(candles.length / 5));
+                
+                Object.keys(VOLATILITY_COLORS).forEach(method => {
+                    const volatilityData = calculateRollingVolatility(method, candles, windowSize);
+                    currentVolatilityData[method] = volatilityData;
+                    if (volatilitySeries[method]) {
+                        volatilitySeries[method].setData(volatilityData);
+                    }
+                });
+                
+                // Автомасштабирование
+                chart.timeScale().fitContent();
+                
+                progressBarFill.style.width = '100%';
+                statusDiv.textContent = `Расчет завершен для ${symbol} (${candles.length} свечей)`;
+                statusDiv.className = 'success';
+                
+                // Скрываем прогресс-бар через 2 секунды
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+                statusDiv.className = 'error';
+                progressBar.style.display = 'none';
+            }
+        });
+
+        // Обработчики для графика
+        resetChartBtn.addEventListener('click', function() {
+            if (chart) {
+                chart.timeScale().fitContent();
+            }
+        });
+
+        toggleVolatilityBtn.addEventListener('click', function() {
+            isVolatilityVisible = !isVolatilityVisible;
+            
+            Object.values(volatilitySeries).forEach(series => {
+                series.applyOptions({ visible: isVolatilityVisible });
+            });
+            
+            this.textContent = isVolatilityVisible ? 'Скрыть волатильность' : 'Показать волатильность';
+        });
+
+        // Загрузка тикеров при изменении типа актива
+        assetTypeSelect.addEventListener('change', loadTickers);
+
+        // Загрузка тикеров
+        async function loadTickers() {
+            const assetType = assetTypeSelect.value;
+            statusDiv.textContent = 'Загрузка тикеров...';
+            statusDiv.className = 'loading';
+            tickerSelect.innerHTML = '<option value="">-- Выберите тикер --</option>';
+
+            try {
+                let url;
+                switch (assetType) {
+                    case 'Акция': url = TQBR_TICKERS_URL; break;
+                    case 'Фьючерс': url = FORTS_TICKERS_URL; break;
+                    case 'Валюта': url = CETS_TICKERS_URL; break;
+                    default: return;
+                }
+
+                console.log('Загрузка тикеров для:', assetType, 'по URL:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Получены данные:', data);
+                
+                if (!data.securities || !data.securities.data) {
+                    throw new Error('Некорректный формат данных от API');
+                }
+
+                const tickers = data.securities.data.map(item => ({
+                    symbol: item[0],
+                    name: item[1]
+                }));
+
+                console.log('Найдено тикеров:', tickers.length);
+
+                tickers.forEach(ticker => {
+                    const option = document.createElement('option');
+                    option.value = ticker.symbol;
+                    option.textContent = `${ticker.symbol} - ${ticker.name}`;
+                    tickerSelect.appendChild(option);
+                });
+
+                statusDiv.textContent = `Загружено ${tickers.length} тикеров`;
+                statusDiv.className = 'success';
+
+            } catch (error) {
+                console.error('Error loading tickers:', error);
+                statusDiv.textContent = `Ошибка загрузки тикеров: ${error.message}`;
+                statusDiv.className = 'error';
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        window.addEventListener('load', function() {
+            setDefaultDates();
+            loadTickers();
+            
+            // Устанавливаем активную кнопку "1 год"
+            document.querySelector('.year-button[data-years="1"]').classList.add('active');
+        });
+
+        // Адаптация размера графика при изменении размера окна
+        window.addEventListener('resize', function() {
+            if (chart) {
+                const chartElement = document.getElementById('candlestick-chart');
+                chart.applyOptions({ 
+                    width: chartElement.clientWidth,
+                    height: chartElement.clientHeight
+                });
+            }
+        });
+    </script>
+</body>
+</html>
