@@ -4,63 +4,104 @@
   <meta charset="UTF-8">
   <title>Опционные модули ThinMarket</title>
   <style>
+    :root {
+      --primary-bg: #2E2E2E;
+      --card-bg: #232323;
+      --accent-color: #4CAF50;
+      --secondary-color: #2980b9;
+      --text-color: #fff;
+      --text-secondary: #bbb;
+      --border-color: #333;
+    }
+    
     body {
-      background: #2E2E2E;
-      color: #fff;
+      background: var(--primary-bg);
+      color: var(--text-color);
       font-family: Arial, sans-serif;
       margin: 0;
       min-height: 100vh;
     }
-    h1 {
+    
+    .header {
       text-align: center;
-      margin-top: 32px;
-      font-size: 2.2em;
-      color: #4CAF50;
-      letter-spacing: 1px;
+      padding: 32px 20px 20px;
     }
+    
+    h1 {
+      font-size: 2.2em;
+      color: var(--accent-color);
+      letter-spacing: 1px;
+      margin: 0 0 10px 0;
+    }
+    
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
     .cards-container {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 32px;
-      margin: 48px auto 0 auto;
-      max-width: 1200px;
+      margin: 32px auto;
+      max-width: 1300px;
+      padding: 0 20px;
     }
+    
     .option-card {
-      background: #232323;
+      background: var(--card-bg);
       border-radius: 18px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-      padding: 32px 28px 24px 28px;
+      padding: 32px 28px 24px;
       width: 320px;
       display: flex;
       flex-direction: column;
       align-items: center;
       transition: transform 0.18s, box-shadow 0.18s;
-      border: 2px solid #333;
+      border: 2px solid var(--border-color);
       position: relative;
     }
+    
     .option-card:hover {
       transform: translateY(-6px) scale(1.03);
       box-shadow: 0 8px 32px rgba(76,175,80,0.18);
-      border-color: #4CAF50;
+      border-color: var(--accent-color);
     }
+    
+    .card-icon {
+      font-size: 2.5em;
+      margin-bottom: 16px;
+      color: var(--accent-color);
+    }
+    
     .option-title {
       font-size: 1.3em;
       font-weight: bold;
-      margin-bottom: 10px;
-      color: #fff;
+      margin-bottom: 12px;
+      color: var(--text-color);
       text-align: center;
     }
+    
     .option-desc {
-      color: #bbb;
+      color: var(--text-secondary);
       font-size: 1em;
       text-align: center;
       margin-bottom: 22px;
-      min-height: 48px;
+      min-height: 72px;
+      line-height: 1.5;
     }
+    
+    .card-footer {
+      margin-top: auto;
+      width: 100%;
+    }
+    
     .open-btn {
-      background: linear-gradient(135deg, #4CAF50, #2980b9);
-      color: #fff;
+      background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+      color: var(--text-color);
       border: none;
       border-radius: 8px;
       padding: 13px 0;
@@ -68,46 +109,133 @@
       font-size: 1.08em;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.18s, color 0.18s;
-      margin-top: auto;
+      transition: all 0.18s;
       letter-spacing: 0.5px;
     }
+    
     .open-btn:hover {
-      background: linear-gradient(135deg, #2980b9, #4CAF50);
-      color: #fff;
+      background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+      transform: translateY(-2px);
     }
+    
+    .coming-soon {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--secondary-color);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-secondary);
+      margin-top: 40px;
+    }
+    
     @media (max-width: 900px) {
-      .cards-container { flex-direction: column; align-items: center; }
-      .option-card { width: 90vw; max-width: 400px; }
+      .cards-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+      }
+      
+      .option-card {
+        width: 90vw;
+        max-width: 400px;
+        padding: 24px 20px 20px;
+      }
+      
+      h1 {
+        font-size: 1.8em;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Опционные модули ThinMarket</h1>
+  <div class="header">
+    <h1>Опционные модули ThinMarket</h1>
+    <p class="subtitle">Инструменты для анализа и торговли опционами на российском рынке</p>
+  </div>
+  
   <div class="cards-container">
-    </div>
+    <!-- Основные модули -->
     <div class="option-card">
+      <div class="coming-soon">Beta</div>
       <div class="option-title">Анализатор ликвидности</div>
       <div class="option-desc">Оценка ликвидности опционов по теоретическим параметрам. Помогает избегать ловушек неликвидности.</div>
-      <a href="option-liquidity-analyzer.html" target="_blank">
-        <button class="open-btn">Открыть</button>
-      </a>
+      <div class="card-footer">
+        <a href="option-liquidity-analyzer.html" target="_blank">
+          <button class="open-btn">Открыть модуль</button>
+        </a>
+      </div>
     </div>
+    
     <div class="option-card">
+      <div class="coming-soon">Beta</div>      
       <div class="option-title">Анализатор волатильности</div>
       <div class="option-desc">Анализ и прогноз волатильности, поиск аномалий и торговых возможностей.</div>
-      <a href="option-volatility-analyzer.html" target="_blank">
-        <button class="open-btn">Открыть</button>
-      </a>
+      <div class="card-footer">
+        <a href="option-volatility-analyzer.html" target="_blank">
+          <button class="open-btn">Открыть модуль</button>
+        </a>
+      </div>
     </div>
+    
     <div class="option-card">
+      <div class="coming-soon">Beta</div>      
       <div class="option-title">Калькулятор цены для неликвидных опционов</div>
       <div class="option-desc">Помогает выставлять лимитные заявки в пустом стакане. Учитывает вашу стратегию и параметры рынка.</div>
-      <a href="option-price-calculator.html" target="_blank">
-        <button class="open-btn">Открыть</button>
-      </a>
+      <div class="card-footer">
+        <a href="option-price-calculator.html" target="_blank">
+          <button class="open-btn">Открыть модуль</button>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Шаблон для дополнительных модулей -->
+    <!-- Копируйте этот блок для добавления новых модулей -->
+    <div class="option-card">
+      <div class="coming-soon">🖥️ </div>          
+      <div class="option-title">HV-Историческая волатильность</div> <!-- Замените название -->
+      <div class="option-desc">Модуль расчета исторической волатильности с визуализацией данных, пять методов.</div> <!-- Замените описание -->
+      <div class="card-footer">
+        <a href="Analiz-HV_option.html" target="_blank"> <!-- Замените ссылку -->
+          <button class="open-btn">Открыть модуль</button>
+        </a>
+      </div>
+    </div>
+
+    <!-- Шаблон для дополнительных модулей -->
+    <!-- Копируйте этот блок для добавления новых модулей -->
+    <div class="option-card">
+      <div class="coming-soon">🖥️ </div>          
+      <div class="option-title">Анализ IV </div> <!-- Замените название -->
+      <div class="option-desc">Ожидаемая волатильность опционов Московской биржи, улыбка волатильности.</div> <!-- Замените описание -->
+      <div class="card-footer">
+        <a href="analiz_IV_option (cool).html.html" target="_blank"> <!-- Замените ссылку -->
+          <button class="open-btn">Открыть модуль</button>
+        </a>
+      </div>
+    </div>    
+    
+    <!-- Еще один шаблон с маркером "Скоро" -->
+    <div class="option-card">
+      <div class="coming-soon">Скоро</div>
+      <div class="option-title">Опционный калькулятор</div>
+      <div class="option-desc">Находится в разработке. Будет достпуно с опционами MOEX</div>
+      <div class="card-footer">
+        <button class="open-btn" style="opacity: 0.7; cursor: not-allowed;">Скоро доступно</button>
+      </div>
     </div>
   </div>
+  
+  <div class="footer">
+    <p>ThinMarket © 2025 | Профессиональные инструменты для трейдеров</p>
+  </div>
 </body>
-
 </html>
